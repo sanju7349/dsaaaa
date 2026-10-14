@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ColdChain-Twin"
+description = "A client-only refrigerated warehouse dashboard with simulated IoT telemetry, interactive digital twin, energy scenarios, anomaly monitoring, and an offline operations co-pilot."
+version = "1.0.0"
+id = "artifacts/coldchain-twin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21421
+
+[services.development]
+run = "pnpm --filter @workspace/coldchain-twin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/coldchain-twin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/coldchain-twin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21421"
+BASE_PATH = "/"
