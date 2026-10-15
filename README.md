@@ -1,1 +1,8 @@
-# Cold_store
+Project 1: ColdChain-Twin — Refrigerated Warehouse & Cold-Storage Optimizer
+•	Real-World Context: Cold storage facilities (food distribution hubs, pharmaceutical warehouses) operate 24/7. Doors left open by forklifts, degrading thermal insulation, icing on evaporators, and inefficient cooling cycles account for 30–50% of energy waste and massive emissions.
+•	Core Software Architecture:
+o	Computer Vision (CV): IP/CCTV cameras at bay doors run YOLOv8/Edge AI models to detect door open/ajar durations, vehicle/personnel traffic density, and pallet placement that blocks optimal airflow. Thermal camera feeds detect thermal bridging/leaks around door seals.
+o	IoT & Telemetry: MQTT brokers ingest streaming time-series data from smart power meters (kWh), zone ambient temperatures, refrigerant pressure gauges, and humidity sensors.
+o	Digital Twin: A 3D dashboard (built in Three.js or Unity WebGL) maps the facility layout. A thermodynamic simulation engine (using Python/SimPy or Modelica) models heat transfer based on door-open events vs. thermal load in real time, mirroring current power draws and predicting runaway compressor cycles.
+o	Generative AI & LLM Engine: A RAG-augmented LLM (e.g., Llama 3 / GPT-4o with LangChain) ingests anomaly summaries from the Digital Twin (e.g., "Bay 3 door opened 42 times during peak heat; compressor 2 running 18% over baseline"). It outputs structured, actionable schedules (e.g., automated precooling adjustments during off-peak tariff hours, maintenance tickets for degraded door seals, and carbon footprint reduction reports for ESG audits).
+•	Key Software Deliverable: A unified dashboard with a real-time 3D thermal twin, automated automated alert engine, and an interactive "Energy Co-Pilot" chat interface for facility managers.
