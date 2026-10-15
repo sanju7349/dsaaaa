@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: simulation
+    description: Cold chain sequential playback simulation operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /simulation/status:
+    get:
+      operationId: getSimulationStatus
+      tags: [simulation]
+      summary: Get simulation status
+      responses:
+        "200":
+          description: Current simulation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationStatus"
+  /simulation/start:
+    post:
+      operationId: startSimulation
+      tags: [simulation]
+      summary: Start sequential simulation playback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intervalMs:
+                  type: number
+                speed:
+                  type: number
+      responses:
+        "200":
+          description: Started
+  /simulation/pause:
+    post:
+      operationId: pauseSimulation
+      tags: [simulation]
+      summary: Pause simulation playback
+      responses:
+        "200":
+          description: Paused
+  /simulation/step:
+    post:
+      operationId: stepSimulation
+      tags: [simulation]
+      summary: Advance simulation one step forward
+      responses:
+        "200":
+          description: Stepped
+  /simulation/reset:
+    post:
+      operationId: resetSimulation
+      tags: [simulation]
+      summary: Reset simulation playback to step 0
+      responses:
+        "200":
+          description: Reset
+  /simulation/load-local:
+    post:
+      operationId: loadLocalSimulation
+      tags: [simulation]
+      summary: Load local dataset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filePath:
+                  type: string
+      responses:
+        "200":
+          description: Loaded
+  /simulation/upload:
+    post:
+      operationId: uploadSimulationDataset
+      tags: [simulation]
+      summary: Upload .xlsx or .csv dataset
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                dataset:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Dataset uploaded
 components:
   schemas:
     HealthStatus:
@@ -33,4 +122,59 @@ components:
           type: string
       required:
         - status
+    TelemetryPoint:
+      type: object
+      properties:
+        stepIndex:
+          type: integer
+        timestamp:
+          type: string
+        temperature:
+          type: number
+        humidity:
+          type: number
+        vibration:
+          type: number
+        latitude:
+          type: number
+        longitude:
+          type: number
+        batteryLevel:
+          type: number
+        coolingUnitStatus:
+          type: string
+          enum: [OPTIMAL, WARNING, CRITICAL, OFF]
+      required:
+        - stepIndex
+        - timestamp
+        - temperature
+        - humidity
+        - vibration
+        - latitude
+        - longitude
+        - batteryLevel
+        - coolingUnitStatus
+    SimulationStatus:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [IDLE, PLAYING, PAUSED, COMPLETED]
+        currentStep:
+          type: integer
+        totalSteps:
+          type: integer
+        intervalMs:
+          type: number
+        speed:
+          type: number
+        activePayload:
+          $ref: "#/components/schemas/TelemetryPoint"
+      required:
+        - state
+        - currentStep
+        - totalSteps
+        - intervalMs
+        - speed
+
 
