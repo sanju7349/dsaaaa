@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ColdChain-Twin | Energy Simulations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   1. RESET & TOKENS
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0B1120;
+  --panel: #111827;
+  --panel-2: #0e1524;
+  --border: #1F2937;
+  --border-soft: #172033;
+  --accent: #00D8FF;
+  --green: #22c55e;
+  --green-soft: #4ade80;
+  --warn: #F59E0B;
+  --danger: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --muted-2: #64748B;
+  --radius: 12px;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   2. TOP BAR
+   ============================================================ */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #0d1524 0%, #0B1120 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand-logo {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  border-radius: 10px; font-size: 22px; color: #fff;
+  box-shadow: 0 0 22px rgba(0,216,255,0.35);
+}
+.brand h1 { font-size: 20px; letter-spacing: 0.3px; font-weight: 800; }
+.brand h1 .accent { color: var(--accent); }
+.brand p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+.topbar-mid { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.facility-line { font-size: 10.5px; letter-spacing: 1.8px; color: var(--muted); text-transform: uppercase; }
+.tagline { font-size: 13.5px; color: #cbd5e1; }
+.status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font-size: 11.5px; color: var(--muted); padding: 5px 10px;
+  border: 1px solid var(--border); border-radius: 999px; background: #0d1524;
+  white-space: nowrap; transition: all 0.2s;
+}
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip b { color: var(--text); font-weight: 600; }
+
+.topbar-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.kpi-block { display: flex; flex-direction: column; align-items: flex-end; }
+.kpi-label { font-size: 10px; letter-spacing: 1.6px; color: var(--muted); }
+.kpi-value { font-size: 22px; font-weight: 800; margin-top: 2px; }
+.kpi-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 500; }
+
+.alert-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.45); border-radius: 8px;
+  color: var(--warn); font-weight: 700; font-size: 12.5px;
+  cursor: pointer; animation: pulseAlert 2s infinite;
+  transition: transform 0.2s; white-space: nowrap;
+}
+.alert-pill:hover { transform: translateY(-1px); }
+.alert-pill.flash { animation: flashAlert 0.6s ease 2; }
+@keyframes pulseAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+@keyframes flashAlert {
+  0%,100% { background: rgba(245,158,11,0.12); }
+  50%     { background: rgba(245,158,11,0.45); }
+}
+
+/* ============================================================
+   3. LAYOUT
+   ============================================================ */
+.app-layout { display: flex; align-items: flex-start; min-height: calc(100vh - 72px); }
+
+/* ============================================================
+   4. SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 250px; background: #0a0f1c;
+  border-right: 1px solid var(--border);
+  padding: 22px 14px; display: flex; flex-direction: column; gap: 8px;
+  flex-shrink: 0; transition: width 0.28s ease;
+  position: sticky; top: 72px; align-self: stretch;
+  height: calc(100vh - 72px); overflow-y: auto;
+}
+.sidebar.collapsed { width: 74px; padding: 22px 8px; }
+.sidebar-section-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--muted-2);
+  padding: 0 12px 12px; text-transform: uppercase;
+  transition: opacity 0.2s; white-space: nowrap;
+}
+.sidebar.collapsed .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 8px;
+  color: var(--muted); text-decoration: none;
+  font-size: 13.5px; font-weight: 500;
+  transition: all 0.2s; border-left: 2px solid transparent;
+  white-space: nowrap; overflow: hidden;
+}
+.nav-item:hover { background: rgba(0,216,255,0.06); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,216,255,0.18), rgba(0,216,255,0.02));
+  color: var(--accent); border-left-color: var(--accent); font-weight: 600;
+}
+.nav-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-text { transition: opacity 0.2s; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 11px 8px; }
+.sidebar.collapsed .nav-text { opacity: 0; width: 0; }
+.sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+
+/* ============================================================
+   5. MAIN CONTENT
+   ============================================================ */
+.main-content {
+  flex: 1; padding: 22px 26px 160px;
+  display: flex; flex-direction: column; gap: 20px;
+  min-width: 0;
+}
+
+/* ============================================================
+   6. HERO
+   ============================================================ */
+.hero {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(120deg, #101c33 0%, #0d1524 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ""; position: absolute; right: -80px; top: -60px;
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(0,216,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-title {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 18px; font-weight: 700;
+}
+.hero-title .ico {
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(0,216,255,0.6));
+  font-size: 20px;
+}
+.hero-sub {
+  font-size: 12.5px; color: var(--muted);
+  margin-top: 6px; padding-left: 32px; max-width: 620px;
+  line-height: 1.55;
+}
+.hero-meta {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 6px; text-align: right;
+}
+.hero-meta .updated { font-size: 11px; color: var(--muted); letter-spacing: 0.4px; }
+.badge-model {
+  font-size: 10.5px; letter-spacing: 1.4px; font-weight: 700;
+  color: var(--accent); background: rgba(0,216,255,0.1);
+  border: 1px solid rgba(0,216,255,0.35);
+  padding: 6px 12px; border-radius: 6px; text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   7. KPI STRIP
+   ============================================================ */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.kpi-tile {
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.kpi-tile:hover { border-color: rgba(0,216,255,0.4); transform: translateY(-2px); }
+.kpi-tile::before {
+  content: ""; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  opacity: 0.7;
+}
+.kpi-tile.green::before { background: linear-gradient(180deg, var(--green), transparent); }
+.kpi-tile.amber::before { background: linear-gradient(180deg, var(--warn), transparent); }
+.kpi-tile.red::before   { background: linear-gradient(180deg, var(--danger), transparent); }
+
+.kpi-tile .label {
+  font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 600; margin-bottom: 8px;
+}
+.kpi-tile .value {
+  font-size: 24px; font-weight: 800;
+  letter-spacing: -0.4px;
+  display: flex; align-items: baseline; gap: 5px;
+  transition: color 0.3s;
+}
+.kpi-tile .value .unit {
+  font-size: 12px; color: var(--muted); font-weight: 500;
+}
+.kpi-tile .sub {
+  font-size: 10.5px; color: var(--muted); margin-top: 5px;
+}
+.risk-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700;
+  padding: 5px 11px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.risk-chip.low    { background: rgba(34,197,94,0.12); color: var(--green-soft); border: 1px solid rgba(34,197,94,0.4); }
+.risk-chip.medium { background: rgba(245,158,11,0.12); color: var(--warn);      border: 1px solid rgba(245,158,11,0.4); }
+.risk-chip.high   { background: rgba(239,68,68,0.12); color: #fca5a5;            border: 1px solid rgba(239,68,68,0.4); }
+
+/* ============================================================
+   8. CARD
+   ============================================================ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  animation: fadeUp 0.5s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 20px;
+}
+.card-title { display: flex; align-items: center; gap: 10px; font-size: 15.5px; font-weight: 700; }
+.card-title .ico {
+  color: var(--accent); font-size: 18px;
+  filter: drop-shadow(0 0 8px rgba(0,216,255,0.55));
+}
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 5px; padding-left: 28px; }
+
+/* ============================================================
+   9. SIMULATOR GRID
+   ============================================================ */
+.sim-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .sim-grid { grid-template-columns: 1fr; }
+}
+
+/* ------- Controls ------- */
+.controls { display: flex; flex-direction: column; gap: 20px; }
+
+.slider-group { display: flex; flex-direction: column; gap: 8px; }
+.slider-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+}
+.slider-label {
+  font-size: 12.5px; font-weight: 600; color: var(--text);
+  letter-spacing: 0.2px;
+}
+.slider-value {
+  font-size: 12.5px; font-weight: 700;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color: var(--accent);
+  background: rgba(0,216,255,0.08);
+  border: 1px solid rgba(0,216,255,0.28);
+  padding: 3px 9px; border-radius: 6px;
+  min-width: 62px; text-align: right;
+  transition: all 0.2s;
+}
+.slider-hint {
+  font-size: 10.5px; color: var(--muted-2);
+  margin-top: -2px;
+}
+input[type="range"].sim-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, #1a2438 50%, #1a2438 100%);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+input[type="range"].sim-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #0b1322;
+  box-shadow: 0 0 0 2px rgba(0,216,255,0.4), 0 0 12px rgba(0,216,255,0.6);
+  cursor: grab;
+  transition: transform 0.15s;
+}
+input[type="range"].sim-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type="range"].sim-range::-webkit-slider-thumb:active { cursor: grabbing; }
+
+.segmented {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 3px;
+}
+.seg-btn {
+  background: transparent; border: none;
+  color: var(--muted); font-family: inherit;
+  font-size: 11.5px; font-weight: 600;
+  padding: 8px 6px; border-radius: 6px;
+  cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
+}
+.seg-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.seg-btn.active {
+  background: rgba(0,216,255,0.15);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(0,216,255,0.4);
+}
+
+.sim-select {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 11px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sim-select:hover { border-color: rgba(0,216,255,0.4); }
+.sim-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,216,255,0.15); }
+
+/* ------- Outputs panel ------- */
+.outputs { display: flex; flex-direction: column; gap: 18px; }
+
+.gauge-card {
+  background: linear-gradient(160deg, #0f1c33 0%, #0d1524 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 18px 18px 14px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.gauge-title {
+  font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 700;
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+.gauge-svg { width: 100%; max-width: 300px; height: auto; display: block; }
+.gauge-needle {
+  transform-origin: 100px 100px;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gauge-value {
+  font-size: 34px; font-weight: 800;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+  display: flex; align-items: baseline; gap: 4px;
+  margin-top: -46px;
+  z-index: 2;
+}
+.gauge-value .pct { font-size: 14px; color: var(--muted); font-weight: 500; }
+.gauge-status {
+  font-size: 11.5px; color: var(--muted);
+  letter-spacing: 0.4px; margin-top: 4px;
+  z-index: 2;
+}
+.gauge-status b { color: var(--text); }
+
+.heatmap-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.heatmap-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap; gap: 8px;
+}
+.heatmap-head .lbl {
+  font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 700;
+}
+.heatmap-legend {
+  display: flex; gap: 12px; font-size: 10.5px; color: var(--muted);
+  align-items: center;
+}
+.heatmap-legend .sw {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 3px; margin-right: 5px; vertical-align: middle;
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 36px);
+  gap: 6px;
+}
+.heat-tile {
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+  display: grid; place-items: center;
+  font-size: 9.5px; font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.4px;
+  transition: all 0.5s ease;
+  cursor: pointer;
+}
+.heat-tile:hover {
+  transform: scale(1.08);
+  z-index: 5;
+  box-shadow: 0 0 0 2px rgba(0,216,255,0.5);
+}
+
+.strip-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.strip-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap; gap: 8px;
+}
+.strip-head .lbl {
+  font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 700;
+}
+.strip-wrap {
+  position: relative;
+  height: 70px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.strip-ticks {
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-end; gap: 3px;
+  padding-bottom: 4px;
+}
+.tick {
+  flex: 1;
+  background: linear-gradient(180deg, var(--accent), #0e7aa0);
+  border-radius: 2px 2px 0 0;
+  transition: height 0.6s ease, background 0.4s;
+  min-height: 4px;
+}
+.tick.medium { background: linear-gradient(180deg, var(--warn), #b45309); }
+.tick.high   { background: linear-gradient(180deg, var(--danger), #991b1b); }
+
+.strip-now {
+  position: absolute; top: -4px; bottom: 0;
+  width: 2px;
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+  transition: left 1s linear;
+  pointer-events: none;
+}
+.strip-now::after {
+  content: "NOW";
+  position: absolute; top: -16px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px; font-weight: 700;
+  color: var(--green); letter-spacing: 1px;
+}
+.strip-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--muted-2);
+  margin-top: 8px;
+}
+
+.donut-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 18px;
+  flex-wrap: wrap;
+}
+.donut-wrap {
+  position: relative;
+  width: 120px; height: 120px;
+  flex-shrink: 0;
+}
+.donut-wrap svg { transform: rotate(-90deg); display: block; }
+.donut-seg {
+  fill: none; stroke-linecap: butt;
+  transition: stroke-dasharray 0.8s cubic-bezier(0.22, 1, 0.36, 1), stroke-dashoffset 0.8s;
+}
+.donut-center {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  text-align: center;
+}
+.donut-center .big {
+  font-size: 20px; font-weight: 800;
+  color: var(--text); line-height: 1;
+}
+.donut-center .small {
+  font-size: 9.5px; color: var(--muted);
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-top: 3px;
+}
+.donut-legend {
+  display: flex; flex-direction: column; gap: 8px;
+  flex: 1; min-width: 160px;
+}
+.donut-legend .row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+}
+.donut-legend .sw {
+  width: 10px; height: 10px; border-radius: 3px;
+  flex-shrink: 0;
+}
+.donut-legend .nm { flex: 1; color: var(--muted); }
+.donut-legend .vl {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-weight: 700; color: var(--text); font-size: 12px;
+}
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(160deg, #0f1c33 0%, #0d1524 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+@media (max-width: 760px) { .summary-strip { grid-template-columns: repeat(2, 1fr); } }
+
+.summary-item { display: flex; flex-direction: column; gap: 5px; }
+.summary-item .lbl {
+  font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 700;
+}
+.summary-item .val {
+  font-size: 16px; font-weight: 800;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color: var(--text);
+}
+.summary-item .val.accent  { color: var(--accent); }
+.summary-item .val.green   { color: var(--green-soft); }
+.summary-item .val.warn    { color: var(--warn); }
+
+.apply-cta {
+  display: flex; justify-content: center;
+  margin-top: 4px;
+}
+.btn-apply {
+  width: 100%;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, var(--accent), #0070b8);
+  color: #001722;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+  box-shadow: 0 4px 18px rgba(0,216,255,0.25);
+}
+.btn-apply:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,216,255,0.4); }
+.btn-apply.applied {
+  background: linear-gradient(135deg, var(--green), #16a34a);
+  color: #062613;
+  box-shadow: 0 4px 18px rgba(34,197,94,0.3);
+}
+
+.presets-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1100px) { .presets-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .presets-strip { grid-template-columns: 1fr; } }
+
+.preset-btn {
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.preset-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0,216,255,0.12);
+}
+.preset-btn .pr-title {
+  font-size: 13px; font-weight: 700;
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.preset-btn .pr-ico {
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  border-radius: 6px;
+  background: rgba(0,216,255,0.12);
+  color: var(--accent);
+  font-size: 12px;
+}
+.preset-btn .pr-sub {
+  font-size: 11px; color: var(--muted);
+  line-height: 1.5;
+}
+
+.rec-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.rec-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.rec-item:hover { border-color: var(--accent); transform: translateX(2px); }
+.rec-item .rec-body { flex: 1; }
+.rec-item .rec-title {
+  font-size: 13px; font-weight: 700;
+  color: var(--text); margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rec-item .rec-title .tag {
+  font-size: 9.5px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px;
+  letter-spacing: 0.6px;
+  background: rgba(0,216,255,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(0,216,255,0.35);
+  text-transform: uppercase;
+}
+.rec-item .rec-title .tag.green { background: rgba(34,197,94,0.12); color: var(--green-soft); border-color: rgba(34,197,94,0.35); }
+.rec-item .rec-title .tag.amber { background: rgba(245,158,11,0.12); color: var(--warn); border-color: rgba(245,158,11,0.35); }
+
+.rec-item .rec-desc {
+  font-size: 12px; color: var(--muted);
+  line-height: 1.55;
+}
+.rec-item .rec-desc b { color: var(--text); font-weight: 600; }
+
+.rec-pin {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted);
+  cursor: pointer; user-select: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.rec-pin:hover { border-color: var(--accent); color: var(--text); }
+.rec-pin input { accent-color: var(--accent); cursor: pointer; }
+
+.rec-actions {
+  display: flex; justify-content: flex-end;
+  margin-top: 14px;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 10px 16px; border-radius: 8px;
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+/* ============================================================
+   12. FOOTER BAR
+   ============================================================ */
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px;
+  background: #050a14;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--muted);
+  z-index: 40;
+  transition: transform 0.25s;
+}
+.footer-bar.collapsed { transform: translateY(60%); }
+.footer-left { display: flex; align-items: center; gap: 10px; }
+.footer-left .cube { color: var(--accent); font-size: 14px; }
+.footer-chevron { cursor: pointer; font-size: 14px; user-select: none; }
+
+/* ============================================================
+   13. TOASTS
+   ============================================================ */
+.toast-container {
+  position: fixed; top: 90px; right: 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 200; max-width: 320px;
+}
+.toast {
+  background: #0e1524;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px; color: var(--text);
+  line-height: 1.5;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  animation: slideIn 0.35s ease;
+}
+.toast.success { border-left-color: var(--green); }
+.toast.warn    { border-left-color: var(--warn); }
+.toast b { color: var(--green-soft); }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 1100px) {
+  .sidebar { width: 74px; padding: 22px 8px; }
+  .sidebar .nav-text { opacity: 0; width: 0; }
+  .sidebar .nav-item { justify-content: center; padding: 11px 8px; }
+  .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .topbar-mid { flex-basis: 100%; order: 3; }
+  .topbar-right { order: 2; }
+}
+@media (max-width: 760px) {
+  .main-content { padding: 16px 14px 200px; }
+  .kpi-strip { grid-template-columns: 1fr; }
+  .hero { padding: 16px; }
+  .hero-meta { align-items: flex-start; text-align: left; width: 100%; }
+  .summary-strip { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body data-page="energy">
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">❄</div>
+    <div>
+      <h1>ColdChain<span class="accent">-Twin</span></h1>
+      <p>Refrigerated Warehouse &amp; Cold-Storage Optimizer</p>
+    </div>
+  </div>
+
+  <div class="topbar-mid">
+    <div class="facility-line">North Dock Facility · Control Room</div>
+    <div class="tagline">Less Energy Waste. Lower Emissions. Smarter Cold Chains.</div>
+    <div class="status-chips">
+      <span class="chip"><b>CV Edge AI:</b> YOLOv8 · Active (30 FPS)</span>
+      <span class="chip"><b>IoT Telemetry:</b> MQTT Virtual Stream (60 Hz)</span>
+      <span class="chip"><b>Digital Twin:</b> SimPy Client Thermodynamic Model</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="kpi-block">
+      <span class="kpi-label">TOTAL LOAD</span>
+      <div class="kpi-value"><span id="totalLoad" data-cc="total-load">252</span><span class="unit">kW</span></div>
+    </div>
+    <div class="alert-pill" id="alertPill" data-cc="alert-pill">
+      <span>⚠</span><span>WARNING: BAY 3 LEAK</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     LAYOUT
+     ============================================================ -->
+<div class="app-layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar" data-cc="sidebar">
+    <div class="sidebar-section-title">Facility Control</div>
+    <nav class="sidebar-nav">
+      <a href="overview.html" class="nav-item" data-nav="overview"><span class="nav-icon">◎</span><span class="nav-text">Overview</span></a>
+      <a href="live_camera_feeds.html" class="nav-item" data-nav="cameras"><span class="nav-icon">▣</span><span class="nav-text">Live Camera Feeds</span></a>
+      <a href="3dwarehouse.html" class="nav-item" data-nav="twin"><span class="nav-icon">◈</span><span class="nav-text">3D Warehouse Twin</span></a>
+      <a href="energy_simulation.html" class="nav-item active" data-nav="energy"><span class="nav-icon">◔</span><span class="nav-text">Energy Simulations</span></a>
+      <a href="copilot_ai.html" class="nav-item" data-nav="copilot"><span class="nav-icon">✦</span><span class="nav-text">Co-Pilot AI</span></a>
+      <a href="audit_and_esg_report.html" class="nav-item" data-nav="audit"><span class="nav-icon">◫</span><span class="nav-text">Audit &amp; ESG Reports</span></a>
+      <a href="facility_config.html" class="nav-item" data-nav="config"><span class="nav-icon">⚙</span><span class="nav-text">Facility Config</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-item" id="collapseBtn" data-nav-action="collapse-sidebar"><span class="nav-icon">≡</span><span class="nav-text">Collapse sidebar</span></a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main-content">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <div class="hero-title">
+          <span class="ico">◔</span>
+          <span>Energy Simulations · Thermodynamic Shock Simulator</span>
+        </div>
+        <div class="hero-sub">
+          Model thermal ingress, energy impact, and shift strategy against the SimPy client model.
+          Adjust the sliders — every output, gauge, heatmap tile and tick updates live.
+        </div>
+      </div>
+      <div class="hero-meta">
+        <span class="badge-model">SimPy Client Model · v0.4.2</span>
+        <span class="updated" id="lastUpdated" data-cc="updated-ticker">updated just now</span>
+      </div>
+    </section>
+
+    <!-- KPI STRIP -->
+    <section class="kpi-strip">
+      <div class="kpi-tile">
+        <div class="label">Ingress energy today</div>
+        <div class="value"><span id="kpiIngress">420</span><span class="unit">kWh</span></div>
+        <div class="sub">from door events × ΔT</div>
+      </div>
+      <div class="kpi-tile green">
+        <div class="label">Energy vs baseline</div>
+        <div class="value"><span id="kpiDelta">0.0</span><span class="unit">%</span></div>
+        <div class="sub">relative to 360 kWh target</div>
+      </div>
+      <div class="kpi-tile" id="kpiRiskTile">
+        <div class="label">Peak load risk</div>
+        <div class="value"><span class="risk-chip low" id="kpiRisk">Low</span></div>
+        <div class="sub">compressor stress index</div>
+      </div>
+      <div class="kpi-tile amber">
+        <div class="label">Estimated CO₂ delta</div>
+        <div class="value"><span id="kpiCo2">18.4</span><span class="unit">kg/day</span></div>
+        <div class="sub">vs 24-hour rolling baseline</div>
+      </div>
+    </section>
+
+    <!-- SIMULATOR -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">◔</span> Thermodynamic Shock Simulator</div>
+          <div class="card-sub">Adjust scenario controls · outputs update in real time</div>
+        </div>
+        <span class="badge-model">Live Simulation</span>
+      </div>
+
+      <div class="sim-grid">
+
+        <!-- ======== CONTROLS ======== -->
+        <div class="controls">
+
+          <!-- Slider 1 -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">Daily Bay Openings</span>
+              <span class="slider-value" id="valOpenings">60</span>
+            </div>
+            <input type="range" class="sim-range" id="sOpenings" min="10" max="150" step="1" value="60" />
+            <span class="slider-hint">Total door-open events across all bays per day</span>
+          </div>
+
+          <!-- Slider 2 -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">Average Open Duration</span>
+              <span class="slider-value" id="valDuration">42s</span>
+            </div>
+            <input type="range" class="sim-range" id="sDuration" min="5" max="120" step="1" value="42" />
+            <span class="slider-hint">Seconds — mean duration each bay stays open</span>
+          </div>
+
+          <!-- Slider 3 -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">External Ambient Temp</span>
+              <span class="slider-value" id="valAmbient">32°C</span>
+            </div>
+            <input type="range" class="sim-range" id="sAmbient" min="15" max="45" step="0.5" value="32" />
+            <span class="slider-hint">Drives the ingress enthalpy term</span>
+          </div>
+
+          <!-- Slider 4 -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">Internal Zone Target ΔT</span>
+              <span class="slider-value" id="valDelta">22K</span>
+            </div>
+            <input type="range" class="sim-range" id="sDelta" min="5" max="45" step="0.5" value="22" />
+            <span class="slider-hint">Difference between ambient and zone target</span>
+          </div>
+
+          <!-- Segmented control -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">Door Seal Quality</span>
+              <span class="slider-value" id="valSeal">Good</span>
+            </div>
+            <div class="segmented" id="sealSeg">
+              <button class="seg-btn" data-seal="Excellent">Excellent</button>
+              <button class="seg-btn active" data-seal="Good">Good</button>
+              <button class="seg-btn" data-seal="Fair">Fair</button>
+              <button class="seg-btn" data-seal="Poor">Poor</button>
+              <button class="seg-btn" data-seal="Failed">Failed</button>
+            </div>
+            <span class="slider-hint">Multiplies the thermal ingress coefficient</span>
+          </div>
+
+          <!-- Mitigation strategy -->
+          <div class="slider-group">
+            <div class="slider-head">
+              <span class="slider-label">Mitigation Strategy</span>
+            </div>
+            <select class="sim-select" id="sStrategy">
+              <option value="Off-Peak Night Shift">Off-Peak Night Shift</option>
+              <option value="Staged Precooling">Staged Precooling</option>
+              <option value="Air-Curtain Retrofit">Air-Curtain Retrofit</option>
+              <option value="Door Open Timer Enforcement">Door Open Timer Enforcement</option>
+              <option value="Refrigerant Blend Optimization">Refrigerant Blend Optimization</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- ======== OUTPUTS ======== -->
+        <div class="outputs">
+
+          <!-- Visual 1 — Radial gauge -->
+          <div class="gauge-card">
+            <span class="gauge-title">Compressor Stress Index</span>
+            <svg class="gauge-svg" viewBox="0 0 200 130">
+              <defs>
+                <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#22c55e" />
+                  <stop offset="50%"  stop-color="#F59E0B" />
+                  <stop offset="100%" stop-color="#EF4444" />
+                </linearGradient>
+              </defs>
+              <path d="M 20 100 A 80 80 0 0 1 180 100"
+                    fill="none" stroke="#172033" stroke-width="14" stroke-linecap="round"/>
+              <path d="M 20 100 A 80 80 0 0 1 180 100"
+                    fill="none" stroke="url(#gGrad)" stroke-width="14" stroke-linecap="round"
+                    stroke-dasharray="251.3" stroke-dashoffset="0" id="gaugeArc" opacity="0.85"/>
+              <g fill="#64748B" font-size="9" font-family="Inter" text-anchor="middle">
+                <text x="20"  y="122">0</text>
+                <text x="100" y="16">50</text>
+                <text x="180" y="122">100</text>
+              </g>
+              <g class="gauge-needle" id="gaugeNeedle">
+                <line x1="100" y1="100" x2="100" y2="30" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="100" cy="100" r="6" fill="#00D8FF" stroke="#0b1322" stroke-width="3"/>
+              </g>
+            </svg>
+            <div class="gauge-value"><span id="gaugeNum">24</span><span class="pct">/ 100</span></div>
+            <div class="gauge-status">Compressor 2 · <b id="gaugeStatus">Nominal</b></div>
+          </div>
+
+          <!-- Visual 2 — Heatmap -->
+          <div class="heatmap-card">
+            <div class="heatmap-head">
+              <span class="lbl">Thermal Zone Heatmap (24-Hour Profile)</span>
+              <div class="heatmap-legend">
+                <span><span class="sw" style="background:#0b2947;"></span>Safe</span>
+                <span><span class="sw" style="background:#F59E0B;"></span>Watch</span>
+                <span><span class="sw" style="background:#EF4444;"></span>Critical</span>
+              </div>
+            </div>
+            <div class="heatmap-grid" id="heatmap"></div>
+          </div>
+
+          <!-- Visual 3 — Door event strip -->
+          <div class="strip-card">
+            <div class="strip-head">
+              <span class="lbl">Door Event Strip · last 60 min</span>
+              <div class="legend">
+                <span><span class="sw" style="background:#00D8FF;"></span>Low</span>
+                <span><span class="sw" style="background:#F59E0B;"></span>Med</span>
+                <span><span class="sw" style="background:#EF4444;"></span>High</span>
+              </div>
+            </div>
+            <div class="strip-wrap">
+              <div class="strip-ticks" id="stripTicks"></div>
+              <div class="strip-now" id="stripNow" style="left:85%;"></div>
+            </div>
+            <div class="strip-labels"><span>-60 min</span><span>-30 min</span><span>now</span></div>
+          </div>
+
+          <!-- Visual 4 — Equipment donut -->
+          <div class="donut-card">
+            <div class="donut-wrap">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#172033" stroke-width="14"/>
+                <circle class="donut-seg" id="segComp" cx="60" cy="60" r="46"
+                        stroke="#00D8FF" stroke-width="14"
+                        stroke-dasharray="0 289" stroke-dashoffset="0"/>
+                <circle class="donut-seg" id="segEvap" cx="60" cy="60" r="46"
+                        stroke="#22c55e" stroke-width="14"
+                        stroke-dasharray="0 289" stroke-dashoffset="0"/>
+                <circle class="donut-seg" id="segLight" cx="60" cy="60" r="46"
+                        stroke="#F59E0B" stroke-width="14"
+                        stroke-dasharray="0 289" stroke-dashoffset="0"/>
+                <circle class="donut-seg" id="segDock" cx="60" cy="60" r="46"
+                        stroke="#a855f7" stroke-width="14"
+                        stroke-dasharray="0 289" stroke-dashoffset="0"/>
+              </svg>
+              <div class="donut-center">
+                <div>
+                  <div class="big" id="donutTotal">420</div>
+                  <div class="small">kWh / day</div>
+                </div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="row"><span class="sw" style="background:#00D8FF;"></span><span class="nm">Compressor</span><span class="vl" id="lgComp">62%</span></div>
+              <div class="row"><span class="sw" style="background:#22c55e;"></span><span class="nm">Evaporator</span><span class="vl" id="lgEvap">23%</span></div>
+              <div class="row"><span class="sw" style="background:#F59E0B;"></span><span class="nm">Lighting</span><span class="vl" id="lgLight">10%</span></div>
+              <div class="row"><span class="sw" style="background:#a855f7;"></span><span class="nm">Dock</span><span class="vl" id="lgDock">5%</span></div>
+            </div>
+          </div>
+
+          <!-- Summary strip -->
+          <div class="summary-strip">
+            <div class="summary-item">
+              <span class="lbl">Current daily</span>
+              <span class="val" id="sumCurrent">420 kWh</span>
+            </div>
+            <div class="summary-item">
+              <span class="lbl">Optimized</span>
+              <span class="val accent" id="sumOptimized">360 kWh</span>
+            </div>
+            <div class="summary-item">
+              <span class="lbl">Reduction</span>
+              <span class="val green" id="sumReduction">14.3%</span>
+            </div>
+            <div class="summary-item">
+              <span class="lbl">Saved / day</span>
+              <span class="val green" id="sumSaved">60 kWh</span>
+            </div>
+            <div class="summary-item">
+              <span class="lbl">Bill savings</span>
+              <span class="val warn" id="sumBill">₹480 / $6.50</span>
+            </div>
+          </div>
+
+          <!-- Apply CTA -->
+          <div class="apply-cta">
+            <button class="btn-apply" id="applyBtn">✓ Apply Optimized Schedule</button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- PRESETS -->
+    <section class="card" style="animation-delay:0.1s;">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">✦</span> Scenario Presets</div>
+          <div class="card-sub">Snap all sliders to a predefined scenario for quick comparison</div>
+        </div>
+      </div>
+      <div class="presets-strip">
+        <button class="preset-btn" data-preset="baseline">
+          <div class="pr-title"><span class="pr-ico">◉</span> Baseline</div>
+          <div class="pr-sub">60 openings · 42s · 32°C · Good seal · Off-Peak shift</div>
+        </button>
+        <button class="preset-btn" data-preset="summer">
+          <div class="pr-title"><span class="pr-ico">☀</span> Peak Summer</div>
+          <div class="pr-sub">90 openings · 60s · 41°C · Fair seal · Staged Precooling</div>
+        </button>
+        <button class="preset-btn" data-preset="discipline">
+          <div class="pr-title"><span class="pr-ico">⏱</span> Door Discipline</div>
+          <div class="pr-sub">35 openings · 15s · 32°C · Excellent seal · Door Timer</div>
+        </button>
+        <button class="preset-btn" data-preset="retrofit">
+          <div class="pr-title"><span class="pr-ico">❄</span> Refrigerant Retrofit</div>
+          <div class="pr-sub">60 openings · 42s · 32°C · Good seal · Blend Optimization</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- RECOMMENDATIONS -->
+    <section class="card" style="animation-delay:0.2s;">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">✦</span> Co-Pilot Recommendation</div>
+          <div class="card-sub">Generated from the current scenario · pin items to include in the plan</div>
+        </div>
+      </div>
+      <div class="rec-list" id="recList"></div>
+      <div class="rec-actions">
+        <button class="btn-ghost" id="regenRec">↻ Regenerate recommendations</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-bar" id="footerBar">
+  <div class="footer-left">
+    <span class="cube">▣</span>
+    <span>DIGITAL TWIN ARCHITECTURE · 5-node offline pipeline</span>
+  </div>
+  <span class="footer-chevron" id="footerChevron">⌃</span>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="cc-store.js"></script>
+<script src="cc-sim.js"></script>
+<script src="cc-backend.js"></script>
+
+<script>
+/* ============================================================
+   1. HELPERS & CONSTANTS
+   ============================================================ */
+const $  = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+const SEAL_FACTOR = { "Excellent": 0.65, "Good": 1.0, "Fair": 1.35, "Poor": 1.75, "Failed": 2.25 };
+
+const STRATEGY_EFFICIENCY = {
+  "Off-Peak Night Shift": 0.857,
+  "Staged Precooling": 0.825,
+  "Air-Curtain Retrofit": 0.800,
+  "Door Open Timer Enforcement": 0.775,
+  "Refrigerant Blend Optimization": 0.875
+};
+
+function showToast(msg, type = "") {
+  const container = $("#toastContainer");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.innerHTML = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity 0.4s, transform 0.4s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(20px)";
+    setTimeout(() => el.remove(), 400);
+  }, 3400);
+}
+
+/* ============================================================
+   2. SIMULATION STATE
+   ============================================================ */
+const CC = window.CC;
+const state = {
+  openings: (CC && CC.get("simulation.openings")) ? parseInt(CC.get("simulation.openings")) : 60,
+  duration: (CC && CC.get("simulation.duration")) ? parseInt(CC.get("simulation.duration")) : 42,
+  ambient:  (CC && (CC.get("facility.ambient") ?? CC.get("simulation.ambient"))) ? parseFloat(CC.get("facility.ambient") ?? CC.get("simulation.ambient")) : 32,
+  deltaT:   (CC && CC.get("simulation.deltaT")) ? parseFloat(CC.get("simulation.deltaT")) : 22,
+  seal:     (CC && CC.get("simulation.seal")) ? CC.get("simulation.seal") : "Good",
+  strategy: (CC && CC.get("simulation.strategy")) ? CC.get("simulation.strategy") : "Off-Peak Night Shift",
+  applied:  (CC && CC.get("simulation.applied")) ? Boolean(CC.get("simulation.applied")) : false,
+  results: {
+    currentDaily: 420,
+    optimizedDaily: 360,
+    reduction: 14.3,
+    saved: 60,
+    stress: 24,
+    co2: 18.4
+  },
+  pinned: new Set()
+};
+
+// Seed from CC if present
+if (window.CC) {
+  const s = CC.get("simulation") || CC.get("sim");
+  if (s) {
+    if (s.openings) state.openings = s.openings;
+    if (s.duration) state.duration = s.duration;
+    if (s.ambient)  state.ambient  = s.ambient;
+    if (s.deltaT)   state.deltaT   = s.deltaT;
+    if (s.seal)     state.seal     = s.seal;
+    if (s.strategy) state.strategy = s.strategy;
+    if (s.applied !== undefined) state.applied = s.applied;
+  }
+  const fAmb = CC.get("facility.ambient");
+  if (fAmb) state.ambient = parseFloat(fAmb);
+}
+
+function readFromDOM() {
+  state.openings = +$("#sOpenings").value;
+  state.duration = +$("#sDuration").value;
+  state.ambient  = +$("#sAmbient").value;
+  state.deltaT   = +$("#sDelta").value;
+  state.strategy = $("#sStrategy").value;
+  const active = $("#sealSeg .seg-btn.active");
+  if (active) state.seal = active.dataset.seal;
+}
+
+function writeToDOM() {
+  $("#sOpenings").value = state.openings;
+  $("#sDuration").value = state.duration;
+  $("#sAmbient").value  = state.ambient;
+  $("#sDelta").value    = state.deltaT;
+  $("#sStrategy").value = state.strategy;
+  $$("#sealSeg .seg-btn").forEach(b => b.classList.toggle("active", b.dataset.seal === state.seal));
+
+  updateSliderValueLabels();
+  paintRanges();
+}
+
+function updateSliderValueLabels() {
+  $("#valOpenings").textContent = state.openings;
+  $("#valDuration").textContent = state.duration + "s";
+  $("#valAmbient").textContent  = state.ambient.toFixed(1).replace(/\.0$/, "") + "°C";
+  $("#valDelta").textContent    = state.deltaT.toFixed(1).replace(/\.0$/, "") + "K";
+  $("#valSeal").textContent     = state.seal;
+}
+
+function paintRanges() {
+  ["sOpenings", "sDuration", "sAmbient", "sDelta"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const min = +el.min, max = +el.max, v = +el.value;
+    const pct = ((v - min) / (max - min)) * 100;
+    el.style.background =
+      `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${pct}%, #1a2438 ${pct}%, #1a2438 100%)`;
+  });
+}
+
+/* ============================================================
+   3. CALCULATION ENGINE
+   ============================================================ */
+function calculate() {
+  readFromDOM();
+  updateSliderValueLabels();
+  paintRanges();
+
+  // Thermodynamic ingress enthalpy model
+  const sealMult = SEAL_FACTOR[state.seal] || 1.0;
+  const baseThermalIngress = (state.openings * (state.duration / 60) * (state.deltaT / 20) * sealMult * 1.82);
+  const currentDaily = Math.round(360 + baseThermalIngress);
+
+  const stratMult = STRATEGY_EFFICIENCY[state.strategy] || 0.85;
+  const optimizedIngress = baseThermalIngress * stratMult;
+  const optimizedDaily = Math.round(360 + optimizedIngress);
+
+  const saved = Math.max(0, currentDaily - optimizedDaily);
+  const reduction = +((saved / currentDaily) * 100).toFixed(1);
+  const stress = Math.min(96, Math.max(8, Math.round(20 + (baseThermalIngress / 4.5))));
+  const co2 = +(saved * 0.306).toFixed(1);
+
+  state.results = {
+    currentDaily,
+    optimizedDaily,
+    reduction,
+    saved,
+    stress,
+    co2
+  };
+
+  renderOutputs();
+}
+
+function renderOutputs() {
+  const r = state.results;
+
+  // KPI strip
+  $("#kpiIngress").textContent = r.currentDaily;
+  $("#kpiDelta").textContent   = (r.currentDaily > 360 ? "+" : "") + (( (r.currentDaily - 360)/360 ) * 100).toFixed(1);
+  $("#kpiCo2").textContent     = r.co2;
+
+  const riskEl = $("#kpiRisk");
+  const riskTile = $("#kpiRiskTile");
+  if (r.stress < 35) {
+    riskEl.className = "risk-chip low"; riskEl.textContent = "Low";
+    riskTile.className = "kpi-tile green";
+  } else if (r.stress < 65) {
+    riskEl.className = "risk-chip medium"; riskEl.textContent = "Medium";
+    riskTile.className = "kpi-tile amber";
+  } else {
+    riskEl.className = "risk-chip high"; riskEl.textContent = "High";
+    riskTile.className = "kpi-tile red";
+  }
+
+  // Visual 1: Gauge
+  $("#gaugeNum").textContent = r.stress;
+  const needleDeg = -90 + (r.stress / 100) * 180;
+  const needle = $("#gaugeNeedle");
+  if (needle) needle.style.transform = `rotate(${needleDeg}deg)`;
+  const stText = r.stress < 35 ? "Nominal" : r.stress < 65 ? "Elevated Load" : "High Strain";
+  $("#gaugeStatus").textContent = stText;
+
+  // Visual 2: Heatmap
+  renderHeatmap(r.stress);
+
+  // Visual 3: Door Strip
+  renderDoorStrip(state.openings, state.duration);
+
+  // Visual 4: Donut
+  renderDonut(r.currentDaily);
+
+  // Summary strip
+  $("#sumCurrent").textContent   = `${r.currentDaily} kWh`;
+  $("#sumOptimized").textContent = `${r.optimizedDaily} kWh`;
+  $("#sumReduction").textContent = `${r.reduction}%`;
+  $("#sumSaved").textContent     = `${r.saved} kWh`;
+  const inrSavings = Math.round(r.saved * 8);
+  const usdSavings = (inrSavings / 83).toFixed(1);
+  $("#sumBill").textContent      = `₹${inrSavings} / $${usdSavings}`;
+
+  // Apply button state
+  updateApplyBtn();
+}
+
+function renderHeatmap(stress) {
+  const grid = $("#heatmap");
+  if (!grid) return;
+  if (!grid.children.length) {
+    grid.innerHTML = "";
+    for (let h = 0; h < 24; h++) {
+      const tile = document.createElement("div");
+      tile.className = "heat-tile";
+      tile.textContent = `${String(h).padStart(2, "0")}h`;
+      grid.appendChild(tile);
+    }
+  }
+
+  const tiles = grid.children;
+  for (let h = 0; h < 24; h++) {
+    // Peak hours 11:00 - 17:00
+    const isPeak = (h >= 11 && h <= 17);
+    const tileStress = isPeak ? stress * 1.25 : stress * 0.7;
+
+    let bg, border;
+    if (tileStress < 35) {
+      bg = "#0d2847"; border = "#174677";
+    } else if (tileStress < 65) {
+      bg = "#5c3d10"; border = "#b45309";
+    } else {
+      bg = "#571616"; border = "#dc2626";
+    }
+    tiles[h].style.background = bg;
+    tiles[h].style.borderColor = border;
+  }
+}
+
+function renderDoorStrip(openings, duration) {
+  const container = $("#stripTicks");
+  if (!container) return;
+  if (!container.children.length) {
+    container.innerHTML = "";
+    for (let i = 0; i < 30; i++) {
+      const tick = document.createElement("div");
+      tick.className = "tick";
+      container.appendChild(tick);
+    }
+  }
+  const ticks = container.children;
+  for (let i = 0; i < ticks.length; i++) {
+    const factor = ((i * 7 + openings) % 10) / 10;
+    const h = Math.max(6, Math.min(65, factor * (duration / 1.6) + 8));
+    ticks[i].style.height = `${h}px`;
+    if (h > 45) ticks[i].className = "tick high";
+    else if (h > 26) ticks[i].className = "tick medium";
+    else ticks[i].className = "tick";
+  }
+}
+
+function renderDonut(total) {
+  const circ = 2 * Math.PI * 46; // ~289
+  const pComp  = 0.62;
+  const pEvap  = 0.23;
+  const pLight = 0.10;
+  const pDock  = 0.05;
+
+  $("#donutTotal").textContent = total;
+
+  const lenComp  = circ * pComp;
+  const lenEvap  = circ * pEvap;
+  const lenLight = circ * pLight;
+  const lenDock  = circ * pDock;
+
+  const sC = $("#segComp");
+  const sE = $("#segEvap");
+  const sL = $("#segLight");
+  const sD = $("#segDock");
+
+  if (sC) {
+    sC.style.strokeDasharray = `${lenComp} ${circ}`;
+    sC.style.strokeDashoffset = `0`;
+  }
+  if (sE) {
+    sE.style.strokeDasharray = `${lenEvap} ${circ}`;
+    sE.style.strokeDashoffset = `-${lenComp}`;
+  }
+  if (sL) {
+    sL.style.strokeDasharray = `${lenLight} ${circ}`;
+    sL.style.strokeDashoffset = `-${lenComp + lenEvap}`;
+  }
+  if (sD) {
+    sD.style.strokeDasharray = `${lenDock} ${circ}`;
+    sD.style.strokeDashoffset = `-${lenComp + lenEvap + lenLight}`;
+  }
+}
+
+function updateApplyBtn() {
+  const btn = $("#applyBtn");
+  if (!btn) return;
+  if (state.applied) {
+    btn.className = "btn-apply applied";
+    btn.textContent = "✓ Schedule Applied Across ColdChain-Twin";
+  } else {
+    btn.className = "btn-apply";
+    btn.textContent = "✓ Apply Optimized Schedule";
+  }
+}
+
+/* ============================================================
+   4. RECOMMENDATIONS GENERATOR
+   ============================================================ */
+const RECOMMENDATIONS = [
+  {
+    id: "rec1",
+    tag: "Energy",
+    tagClass: "green",
+    title: "Shift Bay 3 Pallet Loading to Off-Peak Window (23:00 - 05:00)",
+    desc: "Reduces thermal shock during peak ambient hours (32°C). Estimated savings: <b>42 kWh/day</b> with zero disruption to dispatch SLAs."
+  },
+  {
+    id: "rec2",
+    tag: "Thermal",
+    tagClass: "",
+    title: "Enforce Auto-Roll Door Timer to 20 Seconds on Zone C",
+    desc: "Deep-freeze pharma vault door ajar alert is currently tripping at 42s. Cutting hold-open time prevents <b>18% compressor surge</b>."
+  },
+  {
+    id: "rec3",
+    tag: "Hardware",
+    tagClass: "amber",
+    title: "Inspect & Reseal Bay 3 Dock Shelter Gasket",
+    desc: "Thermal imaging indicates perimeter seal ingress. Replacing the bottom bulb seal restores insulation rating to <b>Good</b>."
+  },
+  {
+    id: "rec4",
+    tag: "ESG",
+    tagClass: "green",
+    title: "Precool Zone A & B by 1.5°C using Rooftop Solar (13:00 - 15:00)",
+    desc: "Store thermal energy in product mass during peak generation to coast through expensive grid peak tariffs."
+  }
+];
+
+function renderRecommendations() {
+  const container = $("#recList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  RECOMMENDATIONS.forEach(rec => {
+    const isPinned = state.pinned.has(rec.id);
+    const item = document.createElement("div");
+    item.className = "rec-item";
+    item.innerHTML = `
+      <div class="rec-body">
+        <div class="rec-title">
+          <span>${rec.title}</span>
+          <span class="tag ${rec.tagClass}">${rec.tag}</span>
+        </div>
+        <div class="rec-desc">${rec.desc}</div>
+      </div>
+      <label class="rec-pin">
+        <input type="checkbox" ${isPinned ? "checked" : ""} data-id="${rec.id}">
+        <span>${isPinned ? "Pinned" : "Pin"}</span>
+      </label>
+    `;
+    const input = item.querySelector("input");
+    input.addEventListener("change", () => {
+      if (input.checked) state.pinned.add(rec.id);
+      else state.pinned.delete(rec.id);
+      input.nextElementSibling.textContent = input.checked ? "Pinned" : "Pin";
+      showToast(input.checked ? `<b>Action pinned</b> to optimization plan` : `Action unpinned`);
+    });
+    container.appendChild(item);
+  });
+}
+
+/* ============================================================
+   5. PRESETS
+   ============================================================ */
+const PRESETS = {
+  baseline:   { openings: 60, duration: 42, ambient: 32, deltaT: 22, seal: "Good", strategy: "Off-Peak Night Shift" },
+  summer:     { openings: 90, duration: 60, ambient: 41, deltaT: 28, seal: "Fair", strategy: "Staged Precooling" },
+  discipline: { openings: 35, duration: 15, ambient: 32, deltaT: 20, seal: "Excellent", strategy: "Door Open Timer Enforcement" },
+  retrofit:   { openings: 60, duration: 42, ambient: 32, deltaT: 22, seal: "Good", strategy: "Refrigerant Blend Optimization" }
+};
+
+$$(".preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.preset;
+    const p = PRESETS[key];
+    if (!p) return;
+    Object.assign(state, p);
+    state.applied = false;
+    writeToDOM();
+    calculate();
+    showToast(`<b>${btn.querySelector(".pr-title").textContent.trim()}</b> scenario loaded.`, "");
+  });
+});
+
+/* ============================================================
+   6. EVENT LISTENERS & WIRING
+   ============================================================ */
+["sOpenings", "sDuration", "sAmbient", "sDelta"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("input", calculate);
+});
+
+$$("#sealSeg .seg-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$("#sealSeg .seg-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.applied = false;
+    calculate();
+  });
+});
+
+const stratSel = $("#sStrategy");
+if (stratSel) {
+  stratSel.addEventListener("change", () => {
+    state.applied = false;
+    calculate();
+  });
+}
+
+// Apply Button Handler
+const applyBtn = $("#applyBtn");
+if (applyBtn) {
+  applyBtn.addEventListener("click", () => {
+    state.applied = !state.applied;
+    updateApplyBtn();
+
+    if (window.CC) {
+      CC.set("simulation.applied", state.applied);
+      CC.set("simulation.openings", state.openings);
+      CC.set("simulation.duration", state.duration);
+      CC.set("simulation.ambient", state.ambient);
+      CC.set("simulation.deltaT", state.deltaT);
+      CC.set("simulation.seal", state.seal);
+      CC.set("simulation.strategy", state.strategy);
+      CC.set("simulation.results", state.results);
+      CC.set("simulation.lastAppliedScenario", state.strategy);
+
+      // Also set sim.* alias for backward compatibility
+      CC.set("sim.applied", state.applied, { silent: true });
+      CC.set("sim.results", state.results, { silent: true });
+
+      CC.emit("sim:applied", state.results);
+    }
+
+    if (state.applied) {
+      showToast(`<b>Optimized Schedule Applied.</b><br/>Syncing ${state.results.reduction}% reduction across ColdChain-Twin!`, "success");
+    } else {
+      showToast(`<b>Schedule Reset</b> to baseline operations.`);
+    }
+  });
+}
+
+// Regenerate recommendations
+const regenBtn = $("#regenRec");
+if (regenBtn) {
+  regenBtn.addEventListener("click", () => {
+    renderRecommendations();
+    showToast(`<b>Recommendations updated</b> for ${state.strategy}.`, "success");
+  });
+}
+
+/* ============================================================
+   7. INITIALIZATION & REACTIVE SUBSCRIPTIONS
+   ============================================================ */
+window.addEventListener("load", () => {
+  writeToDOM();
+  calculate();
+  renderRecommendations();
+  updateApplyBtn();
+  showToast(`<b>Simulation engine online.</b> SimPy thermodynamic model loaded.`, "success");
+});
+
+if (window.CC) {
+  CC.subscribe("facility.ambient", (amb) => {
+    if (amb !== undefined && state.ambient !== parseFloat(amb)) {
+      state.ambient = parseFloat(amb);
+      writeToDOM();
+      calculate();
+    }
+  });
+  CC.subscribe("simulation.applied", (app) => {
+    if (app !== undefined && state.applied !== Boolean(app)) {
+      state.applied = Boolean(app);
+      updateApplyBtn();
+    }
+  });
+}
+</script>
+</body>
+</html>

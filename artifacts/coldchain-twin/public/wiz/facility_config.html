@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ColdChain-Twin | Facility Configuration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   1. RESET & TOKENS
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0B1120;
+  --panel: #111827;
+  --panel-2: #0e1524;
+  --border: #1F2937;
+  --border-soft: #172033;
+  --accent: #00D8FF;
+  --green: #22c55e;
+  --green-soft: #4ade80;
+  --warn: #F59E0B;
+  --danger: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --muted-2: #64748B;
+  --radius: 12px;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   2. TOP BAR
+   ============================================================ */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #0d1524 0%, #0B1120 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand-logo {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  border-radius: 10px; font-size: 22px; color: #fff;
+  box-shadow: 0 0 22px rgba(0,216,255,0.35);
+}
+.brand h1 { font-size: 20px; letter-spacing: 0.3px; font-weight: 800; }
+.brand h1 .accent { color: var(--accent); }
+.brand p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+.topbar-mid { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.facility-line { font-size: 10.5px; letter-spacing: 1.8px; color: var(--muted); text-transform: uppercase; }
+.tagline { font-size: 13.5px; color: #cbd5e1; }
+.status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font-size: 11.5px; color: var(--muted); padding: 5px 10px;
+  border: 1px solid var(--border); border-radius: 999px; background: #0d1524;
+  white-space: nowrap; transition: all 0.2s;
+}
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip b { color: var(--text); font-weight: 600; }
+
+.topbar-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.kpi-block { display: flex; flex-direction: column; align-items: flex-end; }
+.kpi-label { font-size: 10px; letter-spacing: 1.6px; color: var(--muted); }
+.kpi-value { font-size: 22px; font-weight: 800; margin-top: 2px; }
+.kpi-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 500; }
+
+.alert-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.45); border-radius: 8px;
+  color: var(--warn); font-weight: 700; font-size: 12.5px;
+  cursor: pointer; animation: pulseAlert 2s infinite;
+  transition: transform 0.2s; white-space: nowrap;
+}
+.alert-pill:hover { transform: translateY(-1px); }
+.alert-pill.flash { animation: flashAlert 0.6s ease 2; }
+@keyframes pulseAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+@keyframes flashAlert {
+  0%,100% { background: rgba(245,158,11,0.12); }
+  50%     { background: rgba(245,158,11,0.45); }
+}
+
+/* ============================================================
+   3. LAYOUT
+   ============================================================ */
+.app-layout { display: flex; align-items: flex-start; min-height: calc(100vh - 72px); }
+
+/* ============================================================
+   4. SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 250px; background: #0a0f1c;
+  border-right: 1px solid var(--border);
+  padding: 22px 14px; display: flex; flex-direction: column; gap: 8px;
+  flex-shrink: 0; transition: width 0.28s ease;
+  position: sticky; top: 72px; align-self: stretch;
+  height: calc(100vh - 72px); overflow-y: auto;
+}
+.sidebar.collapsed { width: 74px; padding: 22px 8px; }
+.sidebar-section-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--muted-2);
+  padding: 0 12px 12px; text-transform: uppercase;
+  transition: opacity 0.2s; white-space: nowrap;
+}
+.sidebar.collapsed .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 8px;
+  color: var(--muted); text-decoration: none;
+  font-size: 13.5px; font-weight: 500;
+  transition: all 0.2s; border-left: 2px solid transparent;
+  white-space: nowrap; overflow: hidden;
+}
+.nav-item:hover { background: rgba(0,216,255,0.06); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,216,255,0.18), rgba(0,216,255,0.02));
+  color: var(--accent); border-left-color: var(--accent); font-weight: 600;
+}
+.nav-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-text { transition: opacity 0.2s; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 11px 8px; }
+.sidebar.collapsed .nav-text { opacity: 0; width: 0; }
+.sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+
+/* ============================================================
+   5. MAIN CONTENT
+   ============================================================ */
+.main-content {
+  flex: 1; padding: 22px 26px 160px;
+  display: flex; flex-direction: column; gap: 20px;
+  min-width: 0;
+}
+
+/* ============================================================
+   6. HERO STRIP
+   ============================================================ */
+.hero {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  background: linear-gradient(120deg, #101c33 0%, #0d1524 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ""; position: absolute; right: -80px; top: -60px;
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(0,216,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-title {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 18px; font-weight: 700;
+}
+.hero-title .ico {
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(0,216,255,0.6));
+  font-size: 20px;
+}
+.hero-sub {
+  font-size: 12px; color: var(--muted);
+  margin-top: 6px; padding-left: 32px; max-width: 640px;
+}
+.hero-meta {
+  display: flex; flex-direction: column;
+  align-items: flex-end; gap: 6px; text-align: right;
+}
+.hero-meta .updated {
+  font-size: 11px; color: var(--muted); letter-spacing: 0.4px;
+}
+.badge-readonly {
+  font-size: 10.5px; letter-spacing: 1.4px; font-weight: 700;
+  color: var(--accent); background: rgba(0,216,255,0.1);
+  border: 1px solid rgba(0,216,255,0.35);
+  padding: 6px 12px; border-radius: 6px; text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   7. SUB-TAB BAR
+   ============================================================ */
+.tabbar {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  position: relative;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabbar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--muted); font-family: inherit;
+  font-size: 12.5px; font-weight: 600;
+  padding: 9px 16px; border-radius: 7px;
+  transition: all 0.2s; white-space: nowrap;
+  position: relative;
+}
+.tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.tab-btn.active {
+  color: var(--accent);
+  background: rgba(0,216,255,0.1);
+}
+
+/* ============================================================
+   8. CARD
+   ============================================================ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  scroll-margin-top: 130px;
+  animation: fadeUp 0.5s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 20px;
+}
+.card-title { display: flex; align-items: center; gap: 10px; font-size: 15.5px; font-weight: 700; }
+.card-title .ico {
+  color: var(--accent); font-size: 18px;
+  filter: drop-shadow(0 0 8px rgba(0,216,255,0.55));
+}
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 5px; padding-left: 28px; }
+
+/* ============================================================
+   9. FORM CONTROLS
+   ============================================================ */
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field-label {
+  font-size: 10.5px; letter-spacing: 1.2px; color: var(--muted-2);
+  text-transform: uppercase; font-weight: 600;
+}
+.field-input,
+.field-select {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus,
+.field-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,216,255,0.15);
+}
+.field-hint { font-size: 10.5px; color: var(--muted-2); }
+
+/* ============================================================
+   10. IDENTITY SECTION (2-col: form + live summary)
+   ============================================================ */
+.identity-wrap {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 22px;
+  align-items: flex-start;
+}
+
+.summary-panel {
+  background: linear-gradient(160deg, #0f1c33 0%, #0d1524 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative; overflow: hidden;
+}
+.summary-panel::before {
+  content: ""; position: absolute; right: -60px; top: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(0,216,255,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+.summary-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 16px;
+}
+.summary-title .pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: pulseDot 1.6s infinite;
+}
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+  70%     { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+}
+.summary-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 10px 0; border-bottom: 1px dashed var(--border-soft);
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-row .k { font-size: 11.5px; color: var(--muted); }
+.summary-row .v {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+.summary-row .v.accent { color: var(--accent); }
+.summary-row .v.green  { color: var(--green-soft); }
+
+/* ============================================================
+   11. ZONES TABLE
+   ============================================================ */
+.zone-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border-soft); }
+.zone-table {
+  width: 100%; border-collapse: collapse;
+  min-width: 900px;
+  font-size: 12.5px;
+}
+.zone-table thead {
+  background: #0b1322;
+  border-bottom: 1px solid var(--border-soft);
+}
+.zone-table th {
+  text-align: left; padding: 12px 14px;
+  font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted-2); font-weight: 700;
+  white-space: nowrap;
+}
+.zone-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.zone-table tbody tr:hover { background: rgba(0,216,255,0.03); }
+.zone-table tbody tr:last-child td { border-bottom: none; }
+
+.zone-table input {
+  width: 80px; background: transparent;
+  border: 1px solid transparent; border-radius: 6px;
+  padding: 6px 8px; color: var(--text);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 12.5px; text-align: right;
+  transition: all 0.2s;
+}
+.zone-table input:focus {
+  outline: none; border-color: var(--accent);
+  background: rgba(0,216,255,0.06);
+}
+.zone-name-cell {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 600;
+}
+.zone-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.zone-dot.normal { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+.zone-dot.watch  { background: var(--warn);   box-shadow: 0 0 8px var(--warn); }
+.zone-dot.alert  { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+.status-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.6px;
+  padding: 4px 10px; border-radius: 999px;
+  text-transform: uppercase;
+}
+.status-chip.normal { background: rgba(34,197,94,0.12);  color: var(--green-soft); border: 1px solid rgba(34,197,94,0.4); }
+.status-chip.watch  { background: rgba(245,158,11,0.12); color: var(--warn);       border: 1px solid rgba(245,158,11,0.4); }
+.status-chip.alert  { background: rgba(239,68,68,0.12);  color: #fca5a5;            border: 1px solid rgba(239,68,68,0.4); }
+
+/* ============================================================
+   12. SPLIT PANELS (Equipment & Sensors)
+   ============================================================ */
+.split-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+.sub-panel {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 18px;
+}
+.sub-panel-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px;
+}
+.sub-panel-title .badge {
+  margin-left: auto;
+  font-size: 10px; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(0,216,255,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(0,216,255,0.35);
+}
+
+.equip-row, .sensor-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--border-soft);
+}
+.equip-row:last-child, .sensor-row:last-child { border-bottom: none; }
+.equip-name, .sensor-name { font-size: 13px; font-weight: 600; flex: 1; }
+.equip-meta, .sensor-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* Toggle switch */
+.switch {
+  position: relative; display: inline-block;
+  width: 44px; height: 22px; flex-shrink: 0;
+}
+.switch input { display: none; }
+.switch .track {
+  position: absolute; inset: 0;
+  background: #1a2438; border-radius: 999px;
+  border: 1px solid var(--border);
+  transition: all 0.25s;
+}
+.switch .thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--muted); transition: all 0.25s;
+}
+.switch input:checked + .track {
+  background: rgba(34,197,94,0.2);
+  border-color: rgba(34,197,94,0.6);
+  box-shadow: 0 0 12px rgba(34,197,94,0.4);
+}
+.switch input:checked + .track + .thumb { left: 24px; background: var(--green); }
+
+.equip-zone {
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.equip-zone:hover { border-color: var(--accent); }
+.equip-zone:focus { outline: none; border-color: var(--accent); }
+
+.duty-pill {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 8px; border-radius: 6px;
+  background: rgba(0,216,255,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(0,216,255,0.3);
+}
+
+/* Sensor LED */
+.led {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  position: relative;
+}
+.led.green { background: var(--green); box-shadow: 0 0 10px var(--green); }
+.led.amber { background: var(--warn);  box-shadow: 0 0 10px var(--warn); }
+.led.red   { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+.led.calibrating { animation: ledFlash 0.5s linear infinite; }
+@keyframes ledFlash {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.25; }
+}
+
+.btn-mini {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-mini:hover { border-color: var(--accent); color: var(--accent); }
+.btn-mini.calibrating { border-color: var(--accent); color: var(--accent); }
+
+/* ============================================================
+   13. SAVE BAR (sticky at bottom of content)
+   ============================================================ */
+.save-bar {
+  position: fixed;
+  bottom: 44px; left: 50%;
+  transform: translate(-50%, 120%);
+  background: #0e1524;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 90;
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+  max-width: calc(100vw - 32px);
+}
+.save-bar.show { transform: translate(-50%, 0); }
+.save-bar .msg {
+  font-size: 12.5px; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+.save-bar .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 8px var(--warn);
+  animation: pulseDot 1.4s infinite;
+}
+
+/* ============================================================
+   14. BUTTONS
+   ============================================================ */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, var(--accent), #0070b8);
+  color: #001722; border: none;
+  padding: 10px 18px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,216,255,0.35); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 10px 16px; border-radius: 8px;
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+.row-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 20px;
+}
+
+/* ============================================================
+   15. FOOTER BAR
+   ============================================================ */
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px;
+  background: #050a14;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--muted);
+  z-index: 40;
+  transition: transform 0.25s;
+}
+.footer-bar.collapsed { transform: translateY(60%); }
+.footer-left { display: flex; align-items: center; gap: 10px; }
+.footer-left .cube { color: var(--accent); font-size: 14px; }
+.footer-chevron { cursor: pointer; font-size: 14px; user-select: none; }
+
+/* ============================================================
+   16. TOASTS
+   ============================================================ */
+.toast-container {
+  position: fixed; top: 90px; right: 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 200; max-width: 320px;
+}
+.toast {
+  background: #0e1524;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px; color: var(--text);
+  line-height: 1.5;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  animation: slideIn 0.35s ease;
+}
+.toast.success { border-left-color: var(--green); }
+.toast.warn    { border-left-color: var(--warn); }
+.toast b { color: var(--green-soft); }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================
+   17. RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .sidebar { width: 74px; padding: 22px 8px; }
+  .sidebar .nav-text { opacity: 0; width: 0; }
+  .sidebar .nav-item { justify-content: center; padding: 11px 8px; }
+  .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+  .identity-wrap { grid-template-columns: 1fr; }
+  .topbar-mid { flex-basis: 100%; order: 3; }
+  .topbar-right { order: 2; }
+}
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: repeat(2, 1fr); }
+  .split-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .main-content { padding: 16px 14px 200px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .hero { padding: 16px; }
+  .hero-meta { align-items: flex-start; text-align: left; width: 100%; }
+  .save-bar { left: 12px; right: 12px; transform: translate(0, 120%); padding: 12px; flex-wrap: wrap; }
+  .save-bar.show { transform: translate(0, 0); }
+}
+</style>
+</head>
+<body data-page="config">
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">❄</div>
+    <div>
+      <h1>ColdChain<span class="accent">-Twin</span></h1>
+      <p>Refrigerated Warehouse &amp; Cold-Storage Optimizer</p>
+    </div>
+  </div>
+
+  <div class="topbar-mid">
+    <div class="facility-line">North Dock Facility · Control Room</div>
+    <div class="tagline">Less Energy Waste. Lower Emissions. Smarter Cold Chains.</div>
+    <div class="status-chips">
+      <span class="chip"><b>CV Edge AI:</b> YOLOv8 · Active (30 FPS)</span>
+      <span class="chip"><b>IoT Telemetry:</b> MQTT Virtual Stream (60 Hz)</span>
+      <span class="chip"><b>Digital Twin:</b> SimPy Client Thermodynamic Model</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="kpi-block">
+      <span class="kpi-label">TOTAL LOAD</span>
+      <div class="kpi-value"><span id="totalLoad" data-cc="total-load">250</span><span class="unit">kW</span></div>
+    </div>
+    <div class="alert-pill" id="alertPill" data-cc="alert-pill">
+      <span>⚠</span><span>WARNING: BAY 3 LEAK</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     LAYOUT
+     ============================================================ -->
+<div class="app-layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar" data-cc="sidebar">
+    <div class="sidebar-section-title">Facility Control</div>
+    <nav class="sidebar-nav">
+      <a href="overview.html" class="nav-item" data-nav="overview"><span class="nav-icon">◎</span><span class="nav-text">Overview</span></a>
+      <a href="live_camera_feeds.html" class="nav-item" data-nav="cameras"><span class="nav-icon">▣</span><span class="nav-text">Live Camera Feeds</span></a>
+      <a href="3dwarehouse.html" class="nav-item" data-nav="twin"><span class="nav-icon">◈</span><span class="nav-text">3D Warehouse Twin</span></a>
+      <a href="energy_simulation.html" class="nav-item" data-nav="energy"><span class="nav-icon">◔</span><span class="nav-text">Energy Simulations</span></a>
+      <a href="copilot_ai.html" class="nav-item" data-nav="copilot"><span class="nav-icon">✦</span><span class="nav-text">Co-Pilot AI</span></a>
+      <a href="audit_and_esg_report.html" class="nav-item" data-nav="audit"><span class="nav-icon">◫</span><span class="nav-text">Audit &amp; ESG Reports</span></a>
+      <a href="facility_config.html" class="nav-item active" data-nav="config"><span class="nav-icon">⚙</span><span class="nav-text">Facility Config</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-item" id="collapseBtn" data-nav-action="collapse-sidebar"><span class="nav-icon">≡</span><span class="nav-text">Collapse sidebar</span></a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main-content">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <div class="hero-title">
+          <span class="ico">⚙</span>
+          <span>Facility Configuration</span>
+        </div>
+        <div class="hero-sub">
+          Define the physical &amp; thermal parameters that drive the SimPy digital twin.
+          Every field re-computes the summary and config hash in real time.
+        </div>
+      </div>
+      <div class="hero-meta">
+        <span class="badge-readonly">Read-Only · Demo Profile</span>
+        <span class="updated" id="lastUpdated" data-cc="updated-ticker">updated just now</span>
+      </div>
+    </section>
+
+    <!-- SUB-TABS -->
+    <nav class="tabbar" id="tabbar">
+      <button class="tab-btn active" data-target="section-identity">Identity</button>
+      <button class="tab-btn" data-target="section-thermal">Thermal</button>
+      <button class="tab-btn" data-target="section-equipment">Equipment</button>
+      <button class="tab-btn" data-target="section-sensors">Sensors</button>
+      <button class="tab-btn" data-target="section-alarms">Alarms</button>
+      <button class="tab-btn" data-target="section-esg">ESG Policy</button>
+    </nav>
+
+    <!-- ============================================================
+         SECTION 1: IDENTITY & SITE
+         ============================================================ -->
+    <section class="card" id="section-identity">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">◈</span> Identity &amp; Site Parameters</div>
+          <div class="card-sub">Baseline site conditions used by the thermodynamic simulation engine</div>
+        </div>
+        <button class="btn-ghost" id="resetBtn">↻ Reset to defaults</button>
+      </div>
+
+      <div class="identity-wrap">
+        <!-- Form -->
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label" for="facilityId">Facility ID</label>
+            <input id="facilityId" class="field-input" type="text" data-track value="ND-04" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="facilityName">Facility Name</label>
+            <input id="facilityName" class="field-input" type="text" data-track value="North Dock Facility" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="region">Region</label>
+            <input id="region" class="field-input" type="text" data-track value="Maharashtra, IN" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="timezone">Time zone</label>
+            <select id="timezone" class="field-select" data-track>
+              <option>Asia/Kolkata (IST)</option>
+              <option>Asia/Dubai (GST)</option>
+              <option>Europe/London (GMT)</option>
+              <option>America/New_York (EST)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="ambient">Site ambient temperature</label>
+            <input id="ambient" class="field-input" type="number" step="0.1" data-track value="32.0" />
+            <span class="field-hint">°C — used for dew-point calc</span>
+          </div>
+          <div class="field">
+            <label class="field-label" for="humidity">Site ambient humidity</label>
+            <input id="humidity" class="field-input" type="number" step="1" data-track value="78" />
+            <span class="field-hint">% RH</span>
+          </div>
+        </div>
+
+        <!-- Live Summary -->
+        <div class="summary-panel">
+          <div class="summary-title">
+            <span class="pulse"></span>
+            Live Derived Summary
+          </div>
+          <div class="summary-row"><span class="k">Dew point</span><span class="v accent" id="sumDew">—</span></div>
+          <div class="summary-row"><span class="k">Cooling ΔT vs Zone C</span><span class="v" id="sumDelta">—</span></div>
+          <div class="summary-row"><span class="k">Freezing margin</span><span class="v green" id="sumMargin">—</span></div>
+          <div class="summary-row"><span class="k">Rated cooling load</span><span class="v" id="sumLoad">—</span></div>
+          <div class="summary-row"><span class="k">Config hash</span><span class="v accent" id="sumHash">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION 2: THERMAL ZONES
+         ============================================================ -->
+    <section class="card" id="section-thermal">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">🌡</span> Thermal Zones</div>
+          <div class="card-sub">Target and threshold temperatures per cold-storage zone · inline editable</div>
+        </div>
+        <button class="btn-ghost" id="addZoneBtn">+ Add Zone</button>
+      </div>
+
+      <div class="zone-table-wrap">
+        <table class="zone-table" id="zoneTable">
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Target (°C)</th>
+              <th>Warn (°C)</th>
+              <th>Crit (°C)</th>
+              <th>Door Alarm (s)</th>
+              <th>Compressor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="zoneTbody">
+            <tr data-zone="A" data-status="normal">
+              <td><div class="zone-name-cell"><span class="zone-dot normal"></span> Zone A · Ice Cream Vault</div></td>
+              <td><input type="number" step="0.1" value="-18.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-15.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-12.0" data-track /></td>
+              <td><input type="number" step="1"   value="30"    data-track /></td>
+              <td>
+                <select class="equip-zone" data-track>
+                  <option>CMP-01</option><option>CMP-02</option><option>CMP-03</option><option>CMP-04</option>
+                </select>
+              </td>
+              <td><span class="status-chip normal">Normal</span></td>
+            </tr>
+            <tr data-zone="B" data-status="normal">
+              <td><div class="zone-name-cell"><span class="zone-dot normal"></span> Zone B · Frozen Meat &amp; Seafood</div></td>
+              <td><input type="number" step="0.1" value="-20.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-17.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-14.0" data-track /></td>
+              <td><input type="number" step="1"   value="45"    data-track /></td>
+              <td>
+                <select class="equip-zone" data-track>
+                  <option>CMP-02</option><option>CMP-01</option><option>CMP-03</option><option>CMP-04</option>
+                </select>
+              </td>
+              <td><span class="status-chip normal">Normal</span></td>
+            </tr>
+            <tr data-zone="C" data-status="alert">
+              <td><div class="zone-name-cell"><span class="zone-dot alert"></span> Zone C · Deep-Freeze Pharma</div></td>
+              <td><input type="number" step="0.1" value="-22.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-19.0" data-track /></td>
+              <td><input type="number" step="0.1" value="-16.0" data-track /></td>
+              <td><input type="number" step="1"   value="20"    data-track /></td>
+              <td>
+                <select class="equip-zone" data-track>
+                  <option>CMP-03</option><option>CMP-01</option><option>CMP-02</option><option>CMP-04</option>
+                </select>
+              </td>
+              <td><span class="status-chip alert">Alert</span></td>
+            </tr>
+            <tr data-zone="D" data-status="watch">
+              <td><div class="zone-name-cell"><span class="zone-dot watch"></span> Zone D · Chiller Dock</div></td>
+              <td><input type="number" step="0.1" value="2.0"   data-track /></td>
+              <td><input type="number" step="0.1" value="4.0"   data-track /></td>
+              <td><input type="number" step="0.1" value="6.0"   data-track /></td>
+              <td><input type="number" step="1"   value="60"    data-track /></td>
+              <td>
+                <select class="equip-zone" data-track>
+                  <option>CMP-04</option><option>CMP-01</option><option>CMP-02</option><option>CMP-03</option>
+                </select>
+              </td>
+              <td><span class="status-chip watch">Watch</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION 3: EQUIPMENT
+         ============================================================ -->
+    <section class="card" id="section-equipment">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">⚡</span> Equipment Control</div>
+          <div class="card-sub">Compressor rack · toggles persist in browser session only</div>
+        </div>
+      </div>
+
+      <div class="sub-panel">
+        <div class="sub-panel-title">Compressors <span class="badge">4 UNITS</span></div>
+
+        <div class="equip-row">
+          <div style="flex:1"><div class="equip-name">CMP-01 · Carrier Vilter 450</div><div class="equip-meta">R-744 · 120 kW rated</div></div>
+          <select class="equip-zone" data-track><option>Zone A</option><option>Zone B</option><option>Zone C</option><option>Zone D</option></select>
+          <span class="duty-pill" id="duty1">68%</span>
+          <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
+        </div>
+
+        <div class="equip-row">
+          <div style="flex:1"><div class="equip-name">CMP-02 · Bitzer 4FE-25</div><div class="equip-meta">R-744 · 90 kW rated</div></div>
+          <select class="equip-zone" data-track><option>Zone B</option><option>Zone A</option><option>Zone C</option><option>Zone D</option></select>
+          <span class="duty-pill" id="duty2">82%</span>
+          <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
+        </div>
+
+        <div class="equip-row">
+          <div style="flex:1"><div class="equip-name">CMP-03 · GEA Grasso V</div><div class="equip-meta">R-717 · 140 kW rated</div></div>
+          <select class="equip-zone" data-track><option>Zone C</option><option>Zone A</option><option>Zone B</option><option>Zone D</option></select>
+          <span class="duty-pill" id="duty3">74%</span>
+          <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
+        </div>
+
+        <div class="equip-row">
+          <div style="flex:1"><div class="equip-name">CMP-04 · Bitzer 2CES-3</div><div class="equip-meta">R-744 · 45 kW rated</div></div>
+          <select class="equip-zone" data-track><option>Zone D</option><option>Zone A</option><option>Zone B</option><option>Zone C</option></select>
+          <span class="duty-pill" id="duty4">32%</span>
+          <label class="switch"><input type="checkbox" data-track><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION 4: SENSORS
+         ============================================================ -->
+    <section class="card" id="section-sensors">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">◉</span> Sensor Network</div>
+          <div class="card-sub">Live status LEDs · click Calibrate to reset each probe</div>
+        </div>
+      </div>
+
+      <div class="sub-panel">
+        <div class="sub-panel-title">Active Probes <span class="badge">6 SENSORS</span></div>
+
+        <div class="sensor-row">
+          <span class="led green" data-led></span>
+          <div style="flex:1"><div class="sensor-name">TMP-A1 · Zone A temperature probe</div><div class="sensor-meta" data-calibrated>last calibrated 2 hours ago</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+
+        <div class="sensor-row">
+          <span class="led green" data-led></span>
+          <div style="flex:1"><div class="sensor-name">TMP-B2 · Zone B temperature probe</div><div class="sensor-meta" data-calibrated>last calibrated 2 hours ago</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+
+        <div class="sensor-row">
+          <span class="led amber" data-led></span>
+          <div style="flex:1"><div class="sensor-name">TMP-C3 · Zone C temperature probe</div><div class="sensor-meta" data-calibrated>last calibrated 6 hours ago</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+
+        <div class="sensor-row">
+          <span class="led green" data-led></span>
+          <div style="flex:1"><div class="sensor-name">HUM-01 · Ambient humidity</div><div class="sensor-meta" data-calibrated>last calibrated 1 hour ago</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+
+        <div class="sensor-row">
+          <span class="led red" data-led></span>
+          <div style="flex:1"><div class="sensor-name">DR-03 · Bay 3 door contact</div><div class="sensor-meta" data-calibrated>ALERT · open for 42s</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+
+        <div class="sensor-row">
+          <span class="led green" data-led></span>
+          <div style="flex:1"><div class="sensor-name">PR-02 · Refrigerant pressure</div><div class="sensor-meta" data-calibrated>last calibrated 3 hours ago</div></div>
+          <button class="btn-mini" data-calibrate>Calibrate</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION 5: ALARMS
+         ============================================================ -->
+    <section class="card" id="section-alarms">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">🔔</span> Alarm Thresholds</div>
+          <div class="card-sub">Trigger rules applied across all zones and equipment</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label" for="alarmThermal">Thermal alarm</label>
+          <input id="alarmThermal" class="field-input" type="number" value="-15.0" step="0.1" data-track />
+          <span class="field-hint">°C — triggers when any zone exceeds this</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="alarmDoor">Door-open alarm</label>
+          <input id="alarmDoor" class="field-input" type="number" value="30" data-track />
+          <span class="field-hint">seconds — sustained open duration</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="alarmPower">Power spike alarm</label>
+          <input id="alarmPower" class="field-input" type="number" value="15" data-track />
+          <span class="field-hint">% above 24-hour rolling baseline</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="alarmHumidity">Humidity alarm</label>
+          <input id="alarmHumidity" class="field-input" type="number" value="85" data-track />
+          <span class="field-hint">% RH — sustained for 5 minutes</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION 6: ESG POLICY
+         ============================================================ -->
+    <section class="card" id="section-esg">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><span class="ico">🌿</span> ESG Policy</div>
+          <div class="card-sub">Long-term sustainability targets used by the Audit &amp; ESG module</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label class="field-label" for="carbonYear">Carbon target year</label>
+          <input id="carbonYear" class="field-input" type="number" value="2032" data-track />
+          <span class="field-hint">net-zero milestone</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="renewMix">Renewable mix</label>
+          <input id="renewMix" class="field-input" type="number" value="45" data-track />
+          <span class="field-hint">% of grid electricity</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="refrigerant">Refrigerant policy</label>
+          <select id="refrigerant" class="field-select" data-track>
+            <option>R-744 (CO₂) · low GWP</option>
+            <option>R-717 (Ammonia) · zero ODP</option>
+            <option>R-134a · legacy</option>
+            <option>Blend (R-744 + R-717)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="reportCadence">Reporting cadence</label>
+          <select id="reportCadence" class="field-select" data-track>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Annual</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="auditScope">Audit scope</label>
+          <select id="auditScope" class="field-select" data-track>
+            <option>Full facility (Scope 1 + 2)</option>
+            <option>Refrigeration only (Scope 1)</option>
+            <option>Electricity only (Scope 2)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="verifier">Third-party verifier</label>
+          <input id="verifier" class="field-input" type="text" value="Bureau Veritas" data-track />
+        </div>
+      </div>
+
+      <div class="row-actions">
+        <button class="btn-ghost" id="discardBtn">Discard changes</button>
+        <button class="btn-primary" id="saveBtn">✓ Save configuration</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- SAVE BAR -->
+<div class="save-bar" id="saveBar">
+  <span class="msg"><span class="dot"></span> You have unsaved changes</span>
+  <button class="btn-ghost" id="discardBtn2">Discard</button>
+  <button class="btn-primary" id="saveBtn2">✓ Save</button>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-bar" id="footerBar" data-cc="footer">
+  <div class="footer-left">
+    <span class="cube">▣</span>
+    <span>DIGITAL TWIN ARCHITECTURE · 5-node offline pipeline</span>
+  </div>
+  <span class="footer-chevron" id="footerChevron" data-nav-action="toggle-footer">⌃</span>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="cc-store.js"></script>
+<script src="cc-sim.js"></script>
+<script src="cc-backend.js"></script>
+
+<script>
+/* ============================================================
+   1. HELPERS
+   ============================================================ */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const STORAGE_KEY = "coldchain-facility-config-v1";
+
+function showToast(msg, type = "") {
+  const container = $("#toastContainer");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.innerHTML = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity 0.4s, transform 0.4s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(20px)";
+    setTimeout(() => el.remove(), 400);
+  }, 3200);
+}
+
+/* ============================================================
+   2. SIDEBAR & FOOTER TOGGLES
+   ============================================================ */
+$("#collapseBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("#sidebar").classList.toggle("collapsed");
+});
+$("#footerChevron").addEventListener("click", () => {
+  $("#footerBar").classList.toggle("collapsed");
+});
+$("#alertPill").addEventListener("click", () => {
+  const p = $("#alertPill");
+  p.classList.add("flash");
+  setTimeout(() => p.classList.remove("flash"), 1400);
+  showToast(`<b>Bay 3 leak detected.</b><br/>Zone C · door open > 30s.`, "warn");
+});
+
+/* ============================================================
+   3. LIVE CLOCK · "updated Xs ago"
+   ============================================================ */
+let secondsSinceUpdate = 0;
+setInterval(() => {
+  secondsSinceUpdate++;
+  $("#lastUpdated").textContent = secondsSinceUpdate < 5
+    ? "updated just now"
+    : `updated ${secondsSinceUpdate}s ago`;
+  if (secondsSinceUpdate > 25) secondsSinceUpdate = 0;
+}, 1000);
+
+/* ============================================================
+   4. TOTAL LOAD & STATE SUBSCRIPTIONS
+   ============================================================ */
+if (window.CC) {
+  const syncLoad = (val) => {
+    const el = document.getElementById("totalLoad");
+    if (el) el.textContent = Math.round(val || CC.get("facility.totalLoad") || 250);
+  };
+  CC.subscribe("facility.totalLoad", syncLoad);
+  CC.on("state:ready", () => syncLoad(CC.get("facility.totalLoad")));
+}
+
+/* ============================================================
+   5. TAB BAR (smooth scroll + active state)
+   ============================================================ */
+$$(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const target = document.getElementById(btn.dataset.target);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
+// Also highlight tab when user scrolls manually
+window.addEventListener("scroll", () => {
+  const sections = $$(".card[id^='section-']");
+  const scrollY = window.scrollY + 180;
+  let currentId = null;
+  sections.forEach(sec => {
+    if (sec.offsetTop <= scrollY) currentId = sec.id;
+  });
+  if (currentId) {
+    $$(".tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.target === currentId);
+    });
+  }
+});
+
+/* ============================================================
+   6. CONFIG STATE + LIVE SUMMARY
+   ============================================================ */
+const DEFAULTS = {
+  facilityId: "ND-04",
+  facilityName: "North Dock Facility",
+  region: "Maharashtra, IN",
+  timezone: "Asia/Kolkata (IST)",
+  ambient: 32.0,
+  humidity: 78
+};
+
+function hashConfig() {
+  const parts = [
+    $("#facilityId").value,
+    $("#facilityName").value,
+    $("#region").value,
+    $("#ambient").value,
+    $("#humidity").value
+  ].join("|");
+  let h = 0;
+  for (let i = 0; i < parts.length; i++) {
+    h = (h << 5) - h + parts.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h).toString(16).padStart(8, "0").slice(0, 8).toUpperCase();
+}
+
+function updateSummary() {
+  const T = parseFloat($("#ambient").value) || 0;
+  const RH = parseFloat($("#humidity").value) || 0;
+
+  // Magnus formula for dew point
+  const a = 17.27, b = 237.7;
+  const alpha = ((a * T) / (b + T)) + Math.log(RH / 100 || 0.01);
+  const dew = (b * alpha) / (a - alpha);
+  $("#sumDew").textContent = isFinite(dew) ? dew.toFixed(1) + " °C" : "—";
+
+  // Cooling ΔT vs Zone C (target -22.0)
+  const deltaT = T - (-22.0);
+  $("#sumDelta").textContent = deltaT.toFixed(1) + " K";
+
+  // Freezing margin (how far ambient is above 0)
+  $("#sumMargin").textContent = (T - 0).toFixed(1) + " K";
+
+  // Rated cooling load heuristic
+  const load = Math.round(deltaT * 2.8 + RH * 0.15);
+  $("#sumLoad").textContent = load + " kW";
+
+  // Config hash
+  $("#sumHash").textContent = hashConfig();
+}
+
+/* ============================================================
+   7. PERSISTENCE (localStorage)
+   ============================================================ */
+function saveToStorage() {
+  const data = {};
+  $$("[data-track]").forEach(el => {
+    const key = el.id || `${el.tagName}-${Array.from($$("[data-track]")).indexOf(el)}`;
+    if (el.type === "checkbox") data[key] = el.checked;
+    else data[key] = el.value;
+  });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function restoreFromStorage() {
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (e) {}
+  if (!data) return;
+  $$("[data-track]").forEach((el, i) => {
+    const key = el.id || `${el.tagName}-${i}`;
+    if (!(key in data)) return;
+    if (el.type === "checkbox") el.checked = data[key];
+    else el.value = data[key];
+  });
+}
+
+/* ============================================================
+   8. DIRTY TRACKING + SAVE BAR
+   ============================================================ */
+let initialSnapshot = "";
+const saveBar = $("#saveBar");
+
+function snapshot() {
+  return Array.from($$("[data-track]"))
+    .map(el => (el.type === "checkbox" ? el.checked : el.value))
+    .join("||");
+}
+
+function checkDirty() {
+  const dirty = snapshot() !== initialSnapshot;
+  saveBar.classList.toggle("show", dirty);
+}
+
+document.addEventListener("input", (e) => {
+  if (e.target.matches("[data-track]")) {
+    updateSummary();
+    saveToStorage();
+    checkDirty();
+    secondsSinceUpdate = 0;
+  }
+});
+document.addEventListener("change", (e) => {
+  if (e.target.matches("[data-track]")) {
+    updateSummary();
+    saveToStorage();
+    checkDirty();
+  }
+});
+
+/* ============================================================
+   9. RESET · DISCARD · SAVE
+   ============================================================ */
+function resetToDefaults() {
+  Object.entries(DEFAULTS).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  updateSummary();
+  saveToStorage();
+  checkDirty();
+  showToast(`<b>Defaults restored.</b><br/>Site parameters reset.`, "success");
+}
+
+function discardChanges() {
+  restoreFromStorage();
+  initialSnapshot = snapshot();
+  saveBar.classList.remove("show");
+  updateSummary();
+  showToast(`<b>Changes discarded.</b>`, "warn");
+}
+
+function saveConfig() {
+  saveToStorage();
+  if (window.CC) {
+    const amb = parseFloat($("#ambient").value) || 32;
+    const hum = parseFloat($("#humidity").value) || 78;
+    const fid = $("#facilityId").value || "ND-04";
+    const fname = $("#facilityName").value || "North Dock Facility";
+    const reg = $("#region").value || "Maharashtra, IN";
+    const tz = $("#timezone").value || "Asia/Kolkata (IST)";
+    const alarmT = $("#alarmThermal") ? (parseFloat($("#alarmThermal").value) || -15) : -15;
+    const alarmD = $("#alarmDoor") ? (parseInt($("#alarmDoor").value) || 30) : 30;
+
+    CC.set("facility.ambient", amb);
+    CC.set("facility.humidity", hum);
+    CC.set("facility.id", fid);
+    CC.set("facility.name", fname);
+    CC.set("facility.region", reg);
+    CC.set("facility.timezone", tz);
+    CC.set("facility.alarmThermal", alarmT);
+    CC.set("facility.alarmDoor", alarmD);
+
+    CC.set("simulation.ambient", amb);
+
+    // Update zones in CC.state
+    const zones = CC.get("facility.zones") || [];
+    $$("#zoneTbody tr").forEach(tr => {
+      const zId = tr.dataset.zone;
+      const inputs = tr.querySelectorAll("input");
+      if (inputs.length >= 4) {
+        const target = parseFloat(inputs[0].value);
+        const warn = parseFloat(inputs[1].value);
+        const crit = parseFloat(inputs[2].value);
+        const doorAlarm = parseInt(inputs[3].value);
+        const equip = tr.querySelector(".equip-zone") ? tr.querySelector(".equip-zone").value : null;
+
+        const existingZone = zones.find(z => z.id === zId);
+        if (existingZone) {
+          if (!isNaN(target)) existingZone.target = target;
+          if (!isNaN(warn)) existingZone.warn = warn;
+          if (!isNaN(crit)) existingZone.crit = crit;
+          if (!isNaN(doorAlarm)) existingZone.doorAlarm = doorAlarm;
+          if (equip) existingZone.compressor = equip;
+        }
+
+        if (zId === "C" && !isNaN(target)) {
+          CC.set("facility.zones[2].target", target);
+        }
+      }
+    });
+    CC.set("facility.zones", zones);
+
+    CC.emit("config:saved", CC.state.facility);
+  }
+  initialSnapshot = snapshot();
+  saveBar.classList.remove("show");
+  showToast(`<b>Configuration saved.</b><br/>Synced across ColdChain-Twin pages.`, "success");
+}
+
+$("#resetBtn").addEventListener("click", resetToDefaults);
+$("#discardBtn").addEventListener("click", discardChanges);
+$("#discardBtn2").addEventListener("click", discardChanges);
+$("#saveBtn").addEventListener("click", saveConfig);
+$("#saveBtn2").addEventListener("click", saveConfig);
+
+/* ============================================================
+   10. ZONE TABLE — Add zone
+   ============================================================ */
+let zoneCount = 4;
+$("#addZoneBtn").addEventListener("click", () => {
+  zoneCount++;
+  const letter = String.fromCharCode(64 + zoneCount); // E, F, ...
+  const tr = document.createElement("tr");
+  tr.dataset.zone = letter;
+  tr.dataset.status = "normal";
+  tr.innerHTML = `
+    <td><div class="zone-name-cell"><span class="zone-dot normal"></span> Zone ${letter} · New Zone</div></td>
+    <td><input type="number" step="0.1" value="-18.0" data-track /></td>
+    <td><input type="number" step="0.1" value="-15.0" data-track /></td>
+    <td><input type="number" step="0.1" value="-12.0" data-track /></td>
+    <td><input type="number" step="1"   value="30"    data-track /></td>
+    <td>
+      <select class="equip-zone" data-track>
+        <option>CMP-01</option><option>CMP-02</option><option>CMP-03</option><option>CMP-04</option>
+      </select>
+    </td>
+    <td><span class="status-chip normal">Normal</span></td>
+  `;
+  $("#zoneTbody").appendChild(tr);
+  checkDirty();
+  showToast(`<b>Zone ${letter} added.</b><br/>Configure thresholds above.`, "success");
+});
+
+/* ============================================================
+   11. SENSOR CALIBRATE
+   ============================================================ */
+const calibrated = new WeakMap();
+$$("[data-calibrate]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const row = btn.closest(".sensor-row");
+    const led = row.querySelector("[data-led]");
+    const meta = row.querySelector("[data-calibrated]");
+
+    led.classList.add("calibrating");
+    btn.classList.add("calibrating");
+    btn.textContent = "Calibrating…";
+    meta.textContent = "calibrating…";
+
+    setTimeout(() => {
+      led.classList.remove("calibrating");
+      led.classList.remove("amber", "red");
+      led.classList.add("green");
+      btn.classList.remove("calibrating");
+      btn.textContent = "Calibrate";
+      meta.textContent = "last calibrated just now";
+      calibrated.set(row, Date.now());
+      showToast(`<b>Sensor calibrated.</b><br/>Probe reset to factory baseline.`, "success");
+    }, 1500);
+  });
+});
+
+// Tick calibrated timestamps
+setInterval(() => {
+  $$(".sensor-row").forEach(row => {
+    const t = calibrated.get(row);
+    if (!t) return;
+    const sec = Math.floor((Date.now() - t) / 1000);
+    const meta = row.querySelector("[data-calibrated]");
+    if (sec < 60) meta.textContent = `last calibrated ${sec}s ago`;
+    else meta.textContent = `last calibrated ${Math.floor(sec/60)}m ago`;
+  });
+}, 1000);
+
+/* ============================================================
+   12. BOOTSTRAP
+   ============================================================ */
+function loadFromCC() {
+  if (!window.CC) return;
+  const f = CC.get("facility");
+  if (!f) return;
+  if (f.id && $("#facilityId")) $("#facilityId").value = f.id;
+  if (f.name && $("#facilityName")) $("#facilityName").value = f.name;
+  if (f.region && $("#region")) $("#region").value = f.region;
+  if (f.timezone && $("#timezone")) $("#timezone").value = f.timezone;
+  if (f.ambient !== undefined && $("#ambient")) $("#ambient").value = f.ambient;
+  if (f.humidity !== undefined && $("#humidity")) $("#humidity").value = f.humidity;
+  if (f.alarmThermal !== undefined && $("#alarmThermal")) $("#alarmThermal").value = f.alarmThermal;
+  if (f.alarmDoor !== undefined && $("#alarmDoor")) $("#alarmDoor").value = f.alarmDoor;
+
+  const zones = f.zones || [];
+  zones.forEach(z => {
+    const tr = $(`#zoneTbody tr[data-zone="${z.id}"]`);
+    if (tr) {
+      const inputs = tr.querySelectorAll("input");
+      if (inputs.length >= 4) {
+        if (z.target !== undefined) inputs[0].value = z.target;
+        if (z.warn !== undefined) inputs[1].value = z.warn;
+        if (z.crit !== undefined) inputs[2].value = z.crit;
+        if (z.doorAlarm !== undefined) inputs[3].value = z.doorAlarm;
+      }
+    }
+  });
+}
+
+window.addEventListener("load", () => {
+  restoreFromStorage();
+  loadFromCC();
+  updateSummary();
+  initialSnapshot = snapshot();
+  checkDirty();
+  showToast(`<b>Facility Config loaded.</b><br/>Edits persist in this browser.`, "success");
+});
+if (window.CC) {
+  CC.on("state:ready", loadFromCC);
+}
+</script>
+</body>
+</html>

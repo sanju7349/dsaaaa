@@ -3,14 +3,21 @@ import { Activity, AlertTriangle, ArrowDownRight, ArrowRight, AudioLines, Box, C
 import { Area, AreaChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useWarehouseSimulation, type Zone } from '@/hooks/useWarehouseSimulation';
 
-const navItems = [
-  { label: 'Overview', icon: Gauge, target: 'overview' },
-  { label: 'Live Camera Feeds', icon: Camera, target: 'camera' },
-  { label: '3D Warehouse Twin', icon: Box, target: 'twin' },
-  { label: 'Energy Simulations', icon: Activity, target: 'simulator' },
-  { label: 'Co-Pilot AI', icon: Sparkles, target: 'copilot' },
-  { label: 'Audit & ESG Reports', icon: Leaf, target: 'esg' },
-  { label: 'Facility Config', icon: Settings2, target: 'config' },
+interface NavItem {
+  label: string;
+  icon: any;
+  target: string;
+  file?: string;
+}
+
+const navItems: NavItem[] = [
+  { label: 'Overview', icon: Gauge, target: 'overview', file: '/wiz/overview.html' },
+  { label: 'Live Camera Feeds', icon: Camera, target: 'camera', file: '/wiz/live_camera_feeds.html' },
+  { label: '3D Warehouse Twin', icon: Box, target: 'twin', file: '/wiz/3dwarehouse.html' },
+  { label: 'Energy Simulations', icon: Activity, target: 'simulator', file: '/wiz/energy_simulation.html' },
+  { label: 'Co-Pilot AI', icon: Sparkles, target: 'copilot', file: '/wiz/copilot_ai.html' },
+  { label: 'Audit & ESG Reports', icon: Leaf, target: 'esg', file: '/wiz/audit_and_esg_report.html' },
+  { label: 'Facility Config', icon: Settings2, target: 'config', file: '/wiz/facility_config.html' },
 ];
 const chartData = [
   ['00', 238, 224], ['01', 231, 220], ['02', 225, 218], ['03', 222, 216], ['04', 224, 216], ['05', 228, 218],
@@ -91,10 +98,25 @@ function App() {
   }, [openings, duration, ambient, strategy]);
   const saved = simulation.current - simulation.alternative;
   const reduction = (saved / simulation.current * 100).toFixed(1);
+  const currentNav = navItems.find((n) => n.label === activeNav);
+
+  useEffect(() => {
+    const handleMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'cc-nav') {
+        const page = e.data.page;
+        const nav = navItems.find((n) => n.target === page || n.label.toLowerCase().includes(String(page).toLowerCase()));
+        if (nav) {
+          setActiveNav(nav.label);
+        }
+      }
+    };
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
+  }, []);
+
   const goTo = (target: string, label: string) => {
     setActiveNav(label);
-    if (target === 'overview') window.scrollTo({ top: 0, behavior: 'smooth' });
-    else document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const notify = (text: string) => setToast(text);
   const sendPrompt = (text = prompt) => {
@@ -146,6 +168,7 @@ function App() {
           <div className="system-pill"><b>CV Edge AI:</b> YOLOv8 - Active (30 FPS)</div><div className="system-pill"><b>IoT Telemetry:</b> MQTT Virtual Stream (60 Hz)</div><div className="system-pill"><b>Digital Twin:</b> SimPy Client Thermodynamic Model</div><div className="system-pill"><b>Generative AI:</b> Offline Energy Co-Pilot Engine</div>
         </div>
       </header>
+      {activeNav === 'Overview' ? (
       <main className="content" id="overview">
         {breach && <div className="alarm-banner show" data-testid="status-breach-alarm"><span><ShieldAlert size={15} style={{ verticalAlign: 'middle', marginRight: 8 }}/>SIMULATED THERMAL BREACH ACTIVE · ZONE A WARMING · COMPRESSOR 2 OVERDRIVE</span><button className="btn danger" onClick={breachTimer}>Clear simulation</button></div>}
         <div className="section-head"><div><div className="section-title"><CircleDot size={14} color="#42d4b2"/> Live operations overview</div><div className="panel-sub">North Dock · Facility ND-04 · Local time {hour}</div></div><button className={`btn ${breach ? 'danger' : 'ghost'}`} onClick={breachTimer} data-testid="button-simulate-breach">{breach ? <Check size={13}/> : <AlertTriangle size={13}/>} {breach ? 'End Breach Simulation' : 'Simulate Bay 3 Breach'}</button></div>
@@ -224,6 +247,32 @@ function App() {
           <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,padding:14 }}><div className="result"><small>Facility ID</small><strong style={{ fontSize:13 }}>ND-04 / NORTH DOCK</strong></div><div className="result"><small>Site ambient / humidity</small><strong style={{ fontSize:13 }}>+32°C / 78%</strong></div><div className="result"><small>Thermal alarm threshold</small><strong style={{ fontSize:13 }}>20 sec door-open</strong></div></div>
         </section>
       </main>
+      ) : (
+        <main className="content html-suite-container" style={{ padding: 0, height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+          <div className="suite-action-strip" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: '#0e1524', borderBottom: '1px solid #1F2937' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span className="live-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#42d4b2', display: 'inline-block' }} />
+              <strong style={{ fontSize: 13, color: '#F8FAFC' }}>{activeNav}</strong>
+              <span className="mono" style={{ fontSize: 11, color: '#64748B' }}>{currentNav?.file}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn" style={{ fontSize: 11, padding: '5px 12px' }} onClick={() => { const f = document.getElementById('suite-iframe') as HTMLIFrameElement; if (f) f.src = f.src; }}>
+                ↻ Reload
+              </button>
+              <a href={currentNav?.file} target="_blank" rel="noreferrer" className="btn primary" style={{ fontSize: 11, padding: '5px 14px', textDecoration: 'none' }} data-testid="button-open-standalone">
+                ↗ Open in New Window
+              </a>
+            </div>
+          </div>
+          <iframe
+            id="suite-iframe"
+            key={currentNav?.file}
+            src={currentNav?.file}
+            title={activeNav}
+            style={{ width: '100%', flex: 1, border: 'none', background: '#0B1120' }}
+          />
+        </main>
+      )}
     </div>
     <div className={`architecture ${collapsed ? 'shift' : ''}`} data-testid="module-architecture">
       <button className="arch-toggle" onClick={() => setOpenArch(!openArch)} aria-expanded={openArch} data-testid="button-toggle-architecture"><span><Cpu size={13} style={{ verticalAlign:'middle',marginRight:7,color:'#4fc8dc' }}/> DIGITAL TWIN ARCHITECTURE <span style={{ color:'#5f7184',marginLeft:8 }}>5-node offline pipeline</span></span>{openArch ? <ChevronDown size={15}/> : <ChevronUp size={15}/>}</button>

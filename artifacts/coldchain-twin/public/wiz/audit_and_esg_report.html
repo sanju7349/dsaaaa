@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ColdChain-Twin | Audit &amp; ESG Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET & TOKENS
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0B1120;
+  --panel: #111827;
+  --panel-2: #0e1524;
+  --border: #1F2937;
+  --border-soft: #172033;
+  --accent: #00D8FF;
+  --green: #22c55e;
+  --green-soft: #4ade80;
+  --warn: #F59E0B;
+  --danger: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --muted-2: #64748B;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #0d1524 0%, #0B1120 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand-logo {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  border-radius: 10px;
+  font-size: 22px;
+  color: #fff;
+  box-shadow: 0 0 22px rgba(0,216,255,0.35);
+}
+.brand h1 { font-size: 20px; letter-spacing: 0.3px; font-weight: 800; }
+.brand h1 .accent { color: var(--accent); }
+.brand p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+.topbar-mid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.facility-line {
+  font-size: 10.5px;
+  letter-spacing: 1.8px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.tagline { font-size: 13.5px; color: #cbd5e1; }
+.status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #0d1524;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.chip:hover { border-color: var(--accent); color: var(--text); }
+.chip b { color: var(--text); font-weight: 600; }
+
+.topbar-right {
+  display: flex; align-items: center; gap: 20px;
+  flex-shrink: 0;
+}
+.kpi-block { display: flex; flex-direction: column; align-items: flex-end; }
+.kpi-label { font-size: 10px; letter-spacing: 1.6px; color: var(--muted); }
+.kpi-value { font-size: 22px; font-weight: 800; margin-top: 2px; }
+.kpi-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 500; }
+
+.alert-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.45);
+  border-radius: 8px;
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  animation: pulseAlert 2s infinite;
+  transition: transform 0.2s;
+  white-space: nowrap;
+}
+.alert-pill:hover { transform: translateY(-1px); }
+.alert-pill.flash { animation: flashAlert 0.6s ease 2; }
+@keyframes pulseAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+@keyframes flashAlert {
+  0%,100% { background: rgba(245,158,11,0.12); }
+  50%     { background: rgba(245,158,11,0.45); }
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app-layout {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - 72px);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 250px;
+  background: #0a0f1c;
+  border-right: 1px solid var(--border);
+  padding: 22px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  transition: width 0.28s ease;
+  align-self: stretch;
+  position: sticky;
+  top: 72px;
+  height: calc(100vh - 72px);
+  overflow-y: auto;
+}
+.sidebar.collapsed { width: 74px; padding: 22px 8px; }
+
+.sidebar-section-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--muted-2);
+  padding: 0 12px 12px;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.sidebar.collapsed .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.nav-item:hover { background: rgba(0,216,255,0.06); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,216,255,0.18), rgba(0,216,255,0.02));
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.nav-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-text { transition: opacity 0.2s; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 11px 8px; }
+.sidebar.collapsed .nav-text { opacity: 0; width: 0; }
+
+.sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-content {
+  flex: 1;
+  padding: 22px 26px 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* ============================================================
+   CARD
+   ============================================================ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 24px;
+  animation: fadeUp 0.5s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 20px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.card-title .ico {
+  color: var(--green);
+  font-size: 18px;
+  filter: drop-shadow(0 0 8px rgba(34,197,94,0.55));
+}
+.card-title .ico.cyan {
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(0,216,255,0.55));
+}
+.card-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  padding-left: 28px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #0e1524;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-primary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary:disabled { opacity: 0.65; cursor: wait; }
+
+.spinner {
+  width: 13px; height: 13px;
+  border: 2px solid rgba(0,216,255,0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   METRIC TILES
+   ============================================================ */
+.metric-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.tile {
+  background: linear-gradient(160deg, #0f1c33 0%, #0e1728 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s, transform 0.25s;
+}
+.tile:hover { border-color: rgba(34,197,94,0.5); transform: translateY(-2px); }
+
+.tile::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, var(--green), transparent);
+  opacity: 0.7;
+}
+
+.tile-label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  margin-bottom: 12px;
+}
+
+.tile-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--green-soft);
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tile-value .unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green-soft);
+  opacity: 0.9;
+}
+.tile-value .usd {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* ============================================================
+   TREND CHART (rolling 30-day)
+   ============================================================ */
+.trend-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
+}
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.trend-head .lbl {
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.trend-head .legend {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.trend-head .legend .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(34,197,94,0.7);
+}
+.trend-chart {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+  align-items: end;
+  height: 130px;
+  padding: 6px 4px 0;
+}
+.trend-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+}
+.trend-bar {
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, #4ade80, #16a34a);
+  height: 0%;
+  transition: height 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 12px rgba(34,197,94,0.35);
+  position: relative;
+}
+.trend-bar::after {
+  content: attr(data-value);
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--green-soft);
+  white-space: nowrap;
+  opacity: 0.9;
+}
+.trend-week {
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.6px;
+}
+
+/* ============================================================
+   ESG FOOTER (badge + donut)
+   ============================================================ */
+.esg-footer {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.tree-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.35);
+  color: var(--green-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.tree-badge .ico { font-size: 14px; }
+
+.donut-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.donut {
+  position: relative;
+  width: 84px;
+  height: 84px;
+}
+.donut svg { transform: rotate(-90deg); }
+.donut .track { stroke: rgba(255,255,255,0.06); }
+.donut .progress {
+  stroke: url(#donutGrad);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1);
+}
+.donut .value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--green-soft);
+}
+
+.donut-meta { display: flex; flex-direction: column; gap: 3px; }
+.donut-meta .lbl { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.donut-meta .val { font-size: 14px; font-weight: 700; color: var(--text); }
+
+/* ============================================================
+   FACILITY CONFIG
+   ============================================================ */
+.config-badge {
+  font-size: 10.5px;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,216,255,0.1);
+  border: 1px solid rgba(0,216,255,0.35);
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.config-field {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: var(--panel-2);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.config-field:hover { border-color: rgba(0,216,255,0.35); transform: translateY(-1px); }
+.config-label {
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.config-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+.config-value small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+
+/* ============================================================
+   FOOTER BAR
+   ============================================================ */
+.footer-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: #050a14;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  z-index: 40;
+  transition: transform 0.25s;
+}
+.footer-bar.collapsed { transform: translateY(60%); }
+.footer-left { display: flex; align-items: center; gap: 10px; }
+.footer-left .cube { color: var(--accent); font-size: 14px; }
+.footer-chevron { cursor: pointer; font-size: 14px; transition: transform 0.25s; user-select: none; }
+
+/* ============================================================
+   TOAST + MODAL
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  top: 90px; right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 200;
+  max-width: 320px;
+}
+.toast {
+  background: #0e1524;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  animation: slideIn 0.35s ease;
+  color: var(--text);
+  line-height: 1.5;
+}
+.toast.success { border-left-color: var(--green); }
+.toast b { color: var(--green-soft); }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  padding: 20px;
+}
+.modal-backdrop.show { display: flex; }
+
+.modal {
+  background: #0e1524;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 26px 28px;
+  width: 480px;
+  max-width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  animation: popIn 0.25s ease;
+}
+@keyframes popIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.modal h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--green-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.modal p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.modal p b { color: var(--text); font-weight: 600; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+.btn-solid {
+  background: linear-gradient(135deg, var(--green), #16a34a);
+  color: #062613;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-solid:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(34,197,94,0.4); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .sidebar { width: 74px; padding: 22px 8px; }
+  .sidebar .nav-text { opacity: 0; width: 0; }
+  .sidebar .nav-item { justify-content: center; padding: 11px 8px; }
+  .sidebar-section-title { opacity: 0; height: 6px; padding: 0; }
+  .topbar-mid { flex-basis: 100%; order: 3; }
+  .topbar-right { order: 2; }
+}
+@media (max-width: 900px) {
+  .config-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .topbar { padding: 12px 16px; gap: 14px; }
+  .topbar-right { flex-direction: column; align-items: flex-end; gap: 10px; }
+  .metric-tiles { grid-template-columns: 1fr; }
+  .config-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 16px 14px 140px; }
+  .esg-footer { flex-direction: column; align-items: flex-start; }
+  .tile-value { font-size: 26px; }
+  .trend-chart { gap: 8px; height: 110px; }
+}
+</style>
+</head>
+<body data-page="audit">
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">❄</div>
+    <div>
+      <h1>ColdChain<span class="accent">-Twin</span></h1>
+      <p>Refrigerated Warehouse &amp; Cold-Storage Optimizer</p>
+    </div>
+  </div>
+
+  <div class="topbar-mid">
+    <div class="facility-line">North Dock Facility · Control Room</div>
+    <div class="tagline">Less Energy Waste. Lower Emissions. Smarter Cold Chains.</div>
+    <div class="status-chips">
+      <span class="chip"><b>CV Edge AI:</b> YOLOv8 · Active (30 FPS)</span>
+      <span class="chip"><b>IoT Telemetry:</b> MQTT Virtual Stream (60 Hz)</span>
+      <span class="chip"><b>Digital Twin:</b> SimPy Client Thermodynamic Model</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="kpi-block">
+      <span class="kpi-label">TOTAL LOAD</span>
+      <div class="kpi-value"><span id="totalLoad" data-cc="total-load">251</span><span class="unit">kW</span></div>
+    </div>
+    <div class="alert-pill" id="alertPill" data-cc="alert-pill">
+      <span>⚠</span><span>WARNING: BAY 3 LEAK</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     LAYOUT
+     ============================================================ -->
+<div class="app-layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar" data-cc="sidebar">
+    <div class="sidebar-section-title">Facility Control</div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <a href="overview.html" class="nav-item" data-nav="overview">
+        <span class="nav-icon">◎</span><span class="nav-text">Overview</span>
+      </a>
+      <a href="live_camera_feeds.html" class="nav-item" data-nav="cameras">
+        <span class="nav-icon">▣</span><span class="nav-text">Live Camera Feeds</span>
+      </a>
+      <a href="3dwarehouse.html" class="nav-item" data-nav="twin">
+        <span class="nav-icon">◈</span><span class="nav-text">3D Warehouse Twin</span>
+      </a>
+      <a href="energy_simulation.html" class="nav-item" data-nav="energy">
+        <span class="nav-icon">◔</span><span class="nav-text">Energy Simulations</span>
+      </a>
+      <a href="copilot_ai.html" class="nav-item" data-nav="copilot">
+        <span class="nav-icon">✦</span><span class="nav-text">Co-Pilot AI</span>
+      </a>
+      <a href="audit_and_esg_report.html" class="nav-item active" data-nav="audit">
+        <span class="nav-icon">◫</span><span class="nav-text">Audit &amp; ESG Reports</span>
+      </a>
+      <a href="facility_config.html" class="nav-item" data-nav="config">
+        <span class="nav-icon">⚙</span><span class="nav-text">Facility Config</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-item" id="collapseBtn" data-nav-action="collapse-sidebar">
+        <span class="nav-icon">≡</span><span class="nav-text">Collapse sidebar</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main-content">
+
+    <!-- ============ CARD 1: AUDIT & ESG IMPACT ============ -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">
+            <span class="ico">🌿</span>
+            <span>Audit &amp; ESG Impact</span>
+          </div>
+          <div class="card-sub">
+            Monthly verified facility performance · rolling 30-day window ·
+            <span id="lastUpdated" data-cc="updated-ticker">updated just now</span>
+          </div>
+        </div>
+        <button class="btn-primary" id="generateBtn">
+          <span>📋</span><span id="generateBtnLabel">Generate ESG Audit Report</span>
+        </button>
+      </div>
+
+      <!-- Metric Tiles -->
+      <div class="metric-tiles">
+        <div class="tile">
+          <div class="tile-label">CO₂ avoided this month</div>
+          <div class="tile-value">
+            <span id="valCo2" data-count="12.4" data-decimals="1">0.0</span>
+            <span class="unit">tonnes</span>
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="tile-label">Energy saved <span id="badgeReduction" style="display:none; margin-left:6px; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; background:rgba(34,197,94,0.18); color:#4ade80;"></span></div>
+          <div class="tile-value">
+            <span id="valKwh" data-count="28600" data-decimals="0" data-format="thousands">0</span>
+            <span class="unit">kWh</span>
+          </div>
+        </div>
+
+        <div class="tile">
+          <div class="tile-label">Direct bill savings</div>
+          <div class="tile-value">
+            <span id="valBill">₹2.1 Lakhs</span>
+            <span class="usd" id="valBillUsd">($2,600 USD)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rolling 30-day trend chart -->
+      <div class="trend-block">
+        <div class="trend-head">
+          <span class="lbl">Rolling 30-day savings trend</span>
+          <span class="legend"><span class="dot"></span> kWh saved (thousands)</span>
+        </div>
+        <div class="trend-chart" id="trendChart">
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="42" data-value="2.1k"></div><span class="trend-week">W1</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="55" data-value="2.8k"></div><span class="trend-week">W2</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="48" data-value="2.4k"></div><span class="trend-week">W3</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="70" data-value="3.5k"></div><span class="trend-week">W4</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="62" data-value="3.1k"></div><span class="trend-week">W5</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="82" data-value="4.1k"></div><span class="trend-week">W6</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="76" data-value="3.8k"></div><span class="trend-week">W7</span></div>
+          <div class="trend-bar-wrap"><div class="trend-bar" data-height="92" data-value="4.6k"></div><span class="trend-week">W8</span></div>
+        </div>
+      </div>
+
+      <!-- ESG Footer -->
+      <div class="esg-footer">
+        <div class="tree-badge" id="treeBadge">
+          <span class="ico">🌿</span>
+          <span id="treeText">Equivalent to planting 560 trees</span>
+        </div>
+
+        <div class="donut-block">
+          <div class="donut">
+            <svg width="84" height="84" viewBox="0 0 84 84">
+              <defs>
+                <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"  stop-color="#4ade80" />
+                  <stop offset="100%" stop-color="#22c55e" />
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="42" cy="42" r="34" fill="none" stroke-width="8"/>
+              <circle class="progress" id="donutProgress"
+                      cx="42" cy="42" r="34" fill="none"
+                      stroke-width="8"
+                      stroke-dasharray="213.6"
+                      stroke-dashoffset="213.6"/>
+            </svg>
+            <div class="value" id="donutValue">0%</div>
+          </div>
+          <div class="donut-meta">
+            <div class="lbl">Net-zero</div>
+            <div class="val">Tier 1 progress</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CARD 2: FACILITY CONFIGURATION ============ -->
+    <section class="card" style="animation-delay:0.1s;">
+      <div class="card-head">
+        <div>
+          <div class="card-title">
+            <span class="ico cyan">⚙</span>
+            <span>Facility Configuration</span>
+          </div>
+          <div class="card-sub">Verified facility profile · live data synced with shared state</div>
+        </div>
+        <span class="config-badge" id="cfgBadge">Profile Active</span>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-field">
+          <div class="config-label">Facility ID</div>
+          <div class="config-value" id="dispFacilityId">ND-04 <small>(North Dock)</small></div>
+        </div>
+        <div class="config-field">
+          <div class="config-label">Site ambient / humidity</div>
+          <div class="config-value" id="dispSiteEnv">32 °C <small>/ 78% RH</small></div>
+        </div>
+        <div class="config-field">
+          <div class="config-label">Thermal alarm threshold</div>
+          <div class="config-value" id="dispThermalThresh">-15.0 °C <small>(30s door-open)</small></div>
+        </div>
+        <div class="config-field">
+          <div class="config-label">Reporting window</div>
+          <div class="config-value">Rolling 30-day <small>(auto-reset)</small></div>
+        </div>
+        <div class="config-field">
+          <div class="config-label">Refrigerant type</div>
+          <div class="config-value">R-744 <small>(CO₂)</small></div>
+        </div>
+        <div class="config-field">
+          <div class="config-label">Data retention</div>
+          <div class="config-value">24 months <small>(audit locked)</small></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================================================
+     FOOTER BAR
+     ============================================================ -->
+<div class="footer-bar" id="footerBar" data-cc="footer">
+  <div class="footer-left">
+    <span class="cube">▣</span>
+    <span>DIGITAL TWIN ARCHITECTURE · 5-node offline pipeline</span>
+  </div>
+  <span class="footer-chevron" id="footerChevron" data-nav-action="toggle-footer">⌃</span>
+</div>
+
+<!-- ============================================================
+     MODAL
+     ============================================================ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3><span>🌿</span> ESG Report Ready</h3>
+    <p id="modalText">
+      Your monthly ESG audit report has been compiled from verified facility telemetry.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">Close</button>
+      <button class="btn-solid" id="modalDownload">⬇ Download Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOASTS
+     ============================================================ */
+-->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================================
+     SCRIPT
+     ============================================================ -->
+<script src="cc-store.js"></script>
+<script src="cc-sim.js"></script>
+<script src="cc-backend.js"></script>
+
+<script>
+/* ============================================================
+   1. LIVE STATE & CC SYNC
+   ============================================================ */
+const esgState = {
+  co2AvoidedTonnes: 12.4,
+  energySavedKwh: 28600,
+  billSavingsInr: 210000,
+  billSavingsUsd: 2600,
+  treesEquivalent: 560,
+  tier1Progress: 71,
+  totalLoadKw: 251,
+  facilityId: "ND-04",
+  lastReportGenerated: null
+};
+
+if (window.CC) {
+  const c = CC.get("esg");
+  if (c) {
+    if (c.co2AvoidedTonnes) esgState.co2AvoidedTonnes = c.co2AvoidedTonnes;
+    if (c.energySavedKwh)   esgState.energySavedKwh   = c.energySavedKwh;
+    if (c.tier1Progress)    esgState.tier1Progress    = c.tier1Progress;
+    if (c.treesEquivalent)  esgState.treesEquivalent  = c.treesEquivalent;
+  }
+  const fId = CC.get("facility.id") || CC.get("config.facilityId");
+  if (fId) esgState.facilityId = fId;
+
+  // If simulation is applied, add bonus savings
+  if (CC.get("simulation.applied") || CC.get("sim.applied")) {
+    const saved = CC.get("simulation.results.saved") || CC.get("sim.results.saved") || 60;
+    esgState.energySavedKwh += (saved * 30);
+    esgState.co2AvoidedTonnes = +(esgState.co2AvoidedTonnes + (saved * 30 * 0.0004)).toFixed(1);
+    esgState.tier1Progress = Math.min(100, esgState.tier1Progress + 4);
+  }
+}
+
+/* ============================================================
+   2. HELPERS
+   ============================================================ */
+const $ = (sel) => document.querySelector(sel);
+const formatThousands = (n) => Math.round(n).toLocaleString("en-IN");
+
+/* ============================================================
+   3. ANIMATED COUNTERS
+   ============================================================ */
+function animateCounter(el) {
+  const target   = parseFloat(el.dataset.count);
+  const decimals = parseInt(el.dataset.decimals || "0", 10);
+  const format   = el.dataset.format;
+  const duration = 1200;
+  const start    = performance.now();
+
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const val = target * eased;
+    el.textContent = format === "thousands"
+      ? formatThousands(val)
+      : val.toFixed(decimals);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = format === "thousands"
+      ? formatThousands(target)
+      : target.toFixed(decimals);
+  }
+  requestAnimationFrame(step);
+}
+
+function runCounters() {
+  const co2El = $("#valCo2");
+  if (co2El) co2El.setAttribute("data-count", esgState.co2AvoidedTonnes);
+  const kwhEl = $("#valKwh");
+  if (kwhEl) kwhEl.setAttribute("data-count", esgState.energySavedKwh);
+
+  document.querySelectorAll("[data-count]").forEach(animateCounter);
+}
+
+/* ============================================================
+   4. DONUT ANIMATION
+   ============================================================ */
+function animateDonut() {
+  const circle = $("#donutProgress");
+  const valEl  = $("#donutValue");
+  if (!circle || !valEl) return;
+  const circumference = 2 * Math.PI * 34;
+  const targetPct = esgState.tier1Progress;
+  const offset = circumference * (1 - targetPct / 100);
+
+  requestAnimationFrame(() => {
+    circle.style.strokeDashoffset = offset.toFixed(2);
+  });
+
+  const start = performance.now();
+  const duration = 1400;
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    valEl.textContent = Math.round(targetPct * eased) + "%";
+    if (t < 1) requestAnimationFrame(step);
+    else valEl.textContent = targetPct + "%";
+  }
+  requestAnimationFrame(step);
+}
+
+/* ============================================================
+   5. BAR CHART ANIMATION
+   ============================================================ */
+function animateBars() {
+  const bars = document.querySelectorAll(".trend-bar");
+  bars.forEach((bar, i) => {
+    const h = bar.dataset.height;
+    setTimeout(() => {
+      bar.style.height = h + "%";
+    }, i * 80);
+  });
+}
+
+/* ============================================================
+   6. TOASTS
+   ============================================================ */
+function showToast(message, type = "") {
+  const container = $("#toastContainer");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.innerHTML = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity 0.4s, transform 0.4s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(20px)";
+    setTimeout(() => el.remove(), 400);
+  }, 3200);
+}
+
+/* ============================================================
+   7. GENERATE REPORT FLOW
+   ============================================================ */
+const generateBtn = $("#generateBtn");
+if (generateBtn) {
+  generateBtn.addEventListener("click", () => {
+    if (generateBtn.disabled) return;
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = `<span class="spinner"></span><span>Generating report…</span>`;
+
+    setTimeout(() => {
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = `<span>📋</span><span>Generate ESG Audit Report</span>`;
+      esgState.lastReportGenerated = new Date();
+      openReportModal();
+      showToast(`<b>ESG Report ready.</b><br/>Rolling 30-day audit compiled.`, "success");
+    }, 1600);
+  });
+}
+
+/* ============================================================
+   8. MODAL
+   ============================================================ */
+const modalBackdrop = $("#modalBackdrop");
+const modalText     = $("#modalText");
+
+function openReportModal() {
+  const d = esgState.lastReportGenerated || new Date();
+  modalText.innerHTML = `
+    Your monthly ESG audit report has been compiled from verified facility telemetry.<br/><br/>
+    <b>Facility:</b> ${esgState.facilityId} (North Dock)<br/>
+    <b>CO₂ avoided:</b> ${esgState.co2AvoidedTonnes} tonnes<br/>
+    <b>Energy saved:</b> ${formatThousands(esgState.energySavedKwh)} kWh<br/>
+    <b>Bill savings:</b> ₹2.1 Lakhs ($2,600 USD)<br/>
+    <b>Tier 1 net-zero progress:</b> ${esgState.tier1Progress}%<br/>
+    <b>Schedule status:</b> ${(window.CC && CC.get("sim.applied")) ? "Optimized Schedule Applied ✓" : "Standard Operations"}<br/>
+    <b>Generated:</b> ${d.toLocaleString()}
+  `;
+  modalBackdrop.classList.add("show");
+}
+
+const modalCancel = $("#modalCancel");
+if (modalCancel) modalCancel.addEventListener("click", () => modalBackdrop.classList.remove("show"));
+if (modalBackdrop) {
+  modalBackdrop.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) modalBackdrop.classList.remove("show");
+  });
+}
+
+/* ============================================================
+   9. DOWNLOAD
+   ============================================================ */
+const modalDownload = $("#modalDownload");
+if (modalDownload) {
+  modalDownload.addEventListener("click", () => {
+    const d = esgState.lastReportGenerated || new Date();
+    const isSimApplied = window.CC && CC.get("sim.applied");
+    const report = `
+============================================================
+  COLDCHAIN-TWIN  ·  ESG AUDIT REPORT
+============================================================
+Facility ID        : ${esgState.facilityId}
+Generated At       : ${d.toLocaleString()}
+Reporting Window   : Rolling 30-day (verified telemetry)
+Optimization State : ${isSimApplied ? "Optimized Night-Shift Schedule Active (14.3% lower ingress)" : "Baseline"}
+
+------------------------------------------------------------
+  KEY METRICS
+------------------------------------------------------------
+CO2 Avoided        : ${esgState.co2AvoidedTonnes} tonnes
+Energy Saved       : ${formatThousands(esgState.energySavedKwh)} kWh
+Direct Bill Savings: Rs 2.1 Lakhs  ($2,600 USD)
+Trees Equivalent   : ${esgState.treesEquivalent} trees planted
+Tier 1 Net-Zero    : ${esgState.tier1Progress}% complete
+
+------------------------------------------------------------
+  METHODOLOGY
+------------------------------------------------------------
+- Data source   : MQTT smart power meters (60 Hz)
+- Thermal model : SimPy client-side thermodynamic simulation
+- CV validation : YOLOv8 edge AI on bay door cameras (30 FPS)
+
+------------------------------------------------------------
+  SIGN-OFF
+------------------------------------------------------------
+Generated by ColdChain-Twin · Audit & ESG Module
+This report is auto-generated for demonstration purposes.
+============================================================
+`;
+
+    const blob = new Blob([report], { type: "text/plain" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `ColdChain-ESG-Report-${d.toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    modalBackdrop.classList.remove("show");
+    showToast(`<b>Report downloaded.</b><br/>Check your Downloads folder.`, "success");
+  });
+}
+
+/* ============================================================
+   10. BOOTSTRAP
+   ============================================================ */
+function renderEsgPage() {
+  if (window.CC) {
+    const fId = CC.get("facility.id") || CC.get("config.facilityId");
+    if (fId && $("#dispFacilityId")) $("#dispFacilityId").innerHTML = `${fId} <small>(North Dock)</small>`;
+    const amb = CC.get("facility.ambient") || CC.get("config.ambient");
+    const hum = CC.get("facility.humidity") || CC.get("config.humidity");
+    if (amb && hum && $("#dispSiteEnv")) $("#dispSiteEnv").innerHTML = `${amb} °C <small>/ ${hum}% RH</small>`;
+    const al = CC.get("facility.alarmThermal") || CC.get("config.alarmThermal");
+    if (al && $("#dispThermalThresh")) $("#dispThermalThresh").innerHTML = `${al} °C <small>(30s door-open)</small>`;
+
+    // Reduction badge from applied simulation schedule
+    const isApplied = Boolean(CC.get("simulation.applied") || CC.get("sim.applied"));
+    const reduction = CC.get("simulation.results.reduction") || CC.get("sim.results.reduction") || 14.3;
+    const badge = $("#badgeReduction");
+    if (badge) {
+      if (isApplied) {
+        badge.textContent = `${reduction}% REDUCTION APPLIED`;
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+  }
+
+  runCounters();
+  animateDonut();
+  animateBars();
+}
+
+window.addEventListener("load", () => {
+  renderEsgPage();
+  showToast(`<b>ESG module loaded.</b><br/>Rolling 30-day window active.`, "success");
+});
+
+if (window.CC) {
+  CC.subscribe("facility", renderEsgPage);
+  CC.subscribe("esg", renderEsgPage);
+  CC.subscribe("simulation.applied", renderEsgPage);
+  CC.subscribe("simulation.results", renderEsgPage);
+  CC.on("state:ready", renderEsgPage);
+}
+</script>
+</body>
+</html>

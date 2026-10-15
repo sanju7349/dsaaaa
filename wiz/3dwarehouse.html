@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ColdChain-Twin | 3D Warehouse Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET & TOKENS
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0B1120;
+  --panel: #111827;
+  --border: #1F2937;
+  --accent: #00D8FF;
+  --danger: #EF4444;
+  --warn: #F59E0B;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #0d1524 0%, #0B1120 100%);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  border-radius: 10px;
+  font-size: 22px;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0,216,255,0.35);
+}
+.brand h1 { font-size: 20px; letter-spacing: 0.5px; }
+.brand h1::after { content: "-Twin"; color: var(--accent); }
+.brand p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.kpi-strip { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.kpi-block { display: flex; flex-direction: column; align-items: flex-start; }
+.kpi-label { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); }
+.kpi-value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.kpi-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 500; }
+
+.kpi-block.alert {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.45);
+  border-radius: 8px;
+  color: var(--warn);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  animation: pulseAlert 2s infinite;
+  transition: transform 0.2s;
+}
+.kpi-block.alert:hover { transform: translateY(-1px); }
+@keyframes pulseAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+
+.topbar-meta { text-align: right; }
+.facility-label { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); }
+.clock { font-size: 14px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app-layout { display: flex; min-height: calc(100vh - 72px); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: 230px;
+  background: #0a0f1c;
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  transition: width 0.25s;
+}
+.sidebar.collapsed { width: 70px; padding: 20px 6px; }
+.sidebar.collapsed .sidebar-section-title { display: none; }
+.sidebar.collapsed .nav-item span:not(.nav-icon) { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; }
+
+.sidebar-section-title {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  color: var(--muted);
+  padding: 0 12px 10px;
+}
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-item:hover { background: rgba(0,216,255,0.06); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,216,255,0.15), transparent);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.nav-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.sidebar-footer { margin-top: auto; }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+.twin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.toolbar-left h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.toolbar-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+  animation: livePulse 1.6s infinite;
+}
+.live-dot.small { width: 6px; height: 6px; }
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+
+.toolbar-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+.toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: #0e1524;
+  transition: all 0.2s;
+  user-select: none;
+}
+.toggle:hover { border-color: var(--accent); color: var(--text); }
+.toggle input { accent-color: var(--accent); cursor: pointer; }
+
+.view-select {
+  padding: 7px 10px;
+  background: #0e1524;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.view-select:focus { outline: 1px solid var(--accent); }
+
+/* ============================================================
+   TWIN BODY GRID
+   ============================================================ */
+.twin-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ============================================================
+   3D SCENE
+   ============================================================ */
+.scene-wrapper {
+  position: relative;
+  background: radial-gradient(ellipse at center, #0f1b30 0%, #060b16 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 500px;
+  perspective: 1400px;
+}
+
+.scene-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,216,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,216,255,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  transform: perspective(600px) rotateX(60deg) scale(1.6);
+  transform-origin: center bottom;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(55deg) rotateZ(-45deg);
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+  padding: 140px;
+}
+
+/* ------- Zones (isometric cubes) ------- */
+.zone {
+  position: absolute;
+  width: 200px;
+  height: 130px;
+  transform-style: preserve-3d;
+  transition: transform 0.35s, filter 0.35s;
+  cursor: pointer;
+}
+.zone:hover { transform: translateZ(20px); }
+
+.zone-a { top: 60px;  left: 60px; }
+.zone-b { top: 60px;  left: 320px; }
+.zone-c { top: 60px;  left: 580px; }
+
+.zone-top {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #0d2b52, #113b6e);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 10px;
+  color: #fff;
+  box-shadow: 0 0 25px rgba(0,216,255,0.35), inset 0 0 20px rgba(0,216,255,0.15);
+  transform: translateZ(30px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.zone-name { font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+.zone-temp { font-size: 20px; font-weight: 700; color: var(--accent); }
+
+.zone-side {
+  position: absolute;
+  background: #071527;
+  border: 1px solid rgba(0,216,255,0.35);
+}
+.zone-side-left {
+  width: 30px; height: 100%;
+  left: -30px; top: 0;
+  transform: rotateY(-90deg);
+  transform-origin: right;
+}
+.zone-side-right {
+  width: 100%; height: 30px;
+  bottom: -30px; left: 0;
+  transform: rotateX(-90deg);
+  transform-origin: top;
+}
+
+/* Zone C alert styling */
+.zone-c.alert .zone-top {
+  background: linear-gradient(135deg, #3b0f0f, #6b1a1a);
+  border-color: var(--danger);
+  animation: alertGlow 1.5s infinite alternate;
+}
+.zone-c.alert .zone-temp { color: #fca5a5; }
+@keyframes alertGlow {
+  from { box-shadow: 0 0 20px rgba(239,68,68,0.35), inset 0 0 20px rgba(239,68,68,0.15); }
+  to   { box-shadow: 0 0 40px rgba(239,68,68,0.75), inset 0 0 20px rgba(239,68,68,0.3); }
+}
+
+.zone.flash {
+  animation: zoneFlash 0.6s ease 3;
+}
+@keyframes zoneFlash {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 35px rgba(239,68,68,1)); transform: scale(1.05) translateZ(30px); }
+}
+
+/* Overlay markers */
+.door-icon {
+  position: absolute;
+  width: 20px; height: 20px;
+  background: var(--accent);
+  border-radius: 3px;
+  bottom: -25px; right: 15px;
+  box-shadow: 0 0 10px rgba(0,216,255,0.8);
+  transition: all 0.3s;
+}
+.door-icon.open {
+  background: var(--danger);
+  box-shadow: 0 0 15px rgba(239,68,68,1);
+  animation: doorBlink 0.9s infinite alternate;
+}
+@keyframes doorBlink { from { opacity: 0.6; } to { opacity: 1; } }
+
+.equipment-icon {
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 14px;
+  color: #7dd3fc;
+  filter: drop-shadow(0 0 6px rgba(0,216,255,0.8));
+}
+.sensor-dot {
+  position: absolute;
+  top: -12px; left: 50%;
+  width: 8px; height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #22c55e;
+  animation: livePulse 1.5s infinite;
+}
+.bay-label {
+  position: absolute;
+  bottom: -50px; left: 0;
+  font-size: 11px;
+  background: var(--warn);
+  color: #000;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transform: translateZ(35px);
+  white-space: nowrap;
+}
+
+/* Airflow */
+.airflow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateZ(5px);
+}
+.airflow path {
+  fill: none;
+  stroke: rgba(0,216,255,0.5);
+  stroke-width: 2;
+  stroke-dasharray: 8 8;
+  animation: dashFlow 2s linear infinite;
+}
+@keyframes dashFlow { to { stroke-dashoffset: -32; } }
+
+/* Toggle visibility */
+.scene.hide-doors .door-icon       { display: none; }
+.scene.hide-sensors .sensor-dot    { display: none; }
+.scene.hide-equipment .equipment-icon { display: none; }
+.scene.hide-airflow .airflow       { display: none; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #0e1524;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0;
+  transform: translate(-50%, -120%);
+  transition: opacity 0.2s;
+  z-index: 50;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.tooltip.show { opacity: 1; }
+.tooltip strong { color: var(--accent); }
+
+/* ============================================================
+   TELEMETRY PANEL
+   ============================================================ */
+.telemetry-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+.panel-header { display: flex; justify-content: space-between; align-items: center; }
+.panel-header h3 { font-size: 14px; }
+
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric-card {
+  background: #0e1524;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.metric-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.metric-top {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--muted); letter-spacing: 0.5px;
+}
+.metric-top .ico { font-size: 12px; }
+.metric-value { font-size: 22px; font-weight: 700; margin: 6px 0 2px; }
+.metric-value small { font-size: 11px; color: var(--muted); font-weight: 500; }
+.metric-foot { font-size: 10px; color: var(--muted); }
+.metric-foot.negative { color: #f87171; }
+
+.anomaly-panel h4 { font-size: 12px; margin-bottom: 10px; color: var(--warn); }
+.anomaly-list { display: flex; flex-direction: column; gap: 8px; }
+.anomaly-item {
+  display: flex; justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(239,68,68,0.08);
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+.anomaly-item strong { font-weight: 600; }
+.anomaly-item span   { color: var(--muted); font-size: 11px; }
+.anomaly-item.flash  { background: rgba(239,68,68,0.35); transform: scale(1.02); }
+
+.copilot-btn {
+  margin-top: auto;
+  padding: 12px;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+.copilot-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,216,255,0.4);
+}
+
+/* ============================================================
+   CO-PILOT MODAL
+   ============================================================ */
+.copilot-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.copilot-modal.show { display: flex; }
+
+.copilot-card {
+  width: 480px; max-width: 92vw;
+  background: #0e1524;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: popIn 0.25s ease;
+}
+@keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.copilot-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(0,216,255,0.1), transparent);
+}
+.copilot-head button {
+  background: none; border: none; color: var(--muted);
+  font-size: 16px; cursor: pointer; font-family: inherit;
+}
+.copilot-head button:hover { color: var(--danger); }
+
+.copilot-body {
+  padding: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.bot-msg, .user-msg {
+  padding: 10px 12px;
+  border-radius: 8px;
+  max-width: 85%;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+.bot-msg  { background: #15203a; border-left: 3px solid var(--accent); }
+.user-msg { background: rgba(0,216,255,0.15); align-self: flex-end; }
+
+.copilot-input { display: flex; border-top: 1px solid var(--border); }
+.copilot-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 14px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.copilot-input button {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 0 20px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.copilot-input button:hover { background: #00b8d9; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .twin-body { grid-template-columns: 1fr; }
+  .sidebar { width: 70px; padding: 20px 6px; }
+  .sidebar .nav-item span:not(.nav-icon) { display: none; }
+  .sidebar .nav-item { justify-content: center; }
+  .sidebar-section-title { display: none; }
+}
+@media (max-width: 760px) {
+  .topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .kpi-strip { width: 100%; justify-content: space-between; }
+  .topbar-meta { text-align: left; width: 100%; }
+  .scene { padding: 40px; transform: rotateX(35deg) rotateZ(-25deg) scale(0.9); }
+  .zone { position: relative; top: 0 !important; left: 0 !important; margin: 0 auto 40px; }
+  .metric-grid { grid-template-columns: 1fr; }
+  .scene-wrapper { min-height: 620px; }
+}
+
+.flash {
+  animation: flashZone 0.8s ease 3 !important;
+}
+@keyframes flashZone {
+  0%, 100% { outline: 3px solid rgba(239, 68, 68, 0.2); box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+  50% { outline: 3px solid #EF4444; box-shadow: 0 0 45px #EF4444; }
+}
+</style>
+</head>
+<body data-page="twin">
+
+<!-- ==================== TOP BAR ==================== -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">❄</div>
+    <div>
+      <h1>ColdChain</h1>
+      <p>Refrigerated Warehouse &amp; Cold-Storage Optimizer</p>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-block">
+      <span class="kpi-label">TOTAL LOAD</span>
+      <div class="kpi-value"><span id="totalLoad" data-cc="total-load">253</span><span class="unit">kW</span></div>
+    </div>
+    <div class="kpi-block alert" id="topAlert" data-cc="alert-pill">
+      <span>⚠</span><span>WARNING: BAY 3 LEAK</span>
+    </div>
+  </div>
+
+  <div class="topbar-meta">
+    <div class="facility-label">NORTH DOCK FACILITY · CONTROL ROOM</div>
+    <div class="clock" id="clock">18:33:33 PM</div>
+  </div>
+</header>
+
+<!-- ==================== LAYOUT ==================== -->
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" data-cc="sidebar">
+    <div class="sidebar-section-title">FACILITY CONTROL</div>
+    <nav class="sidebar-nav">
+      <a href="overview.html" class="nav-item" data-nav="overview"><span class="nav-icon">◎</span> <span>Overview</span></a>
+      <a href="live_camera_feeds.html" class="nav-item" data-nav="cameras"><span class="nav-icon">▣</span> <span>Live Camera Feeds</span></a>
+      <a href="3dwarehouse.html" class="nav-item active" data-nav="twin"><span class="nav-icon">◈</span> <span>3D Warehouse Twin</span></a>
+      <a href="energy_simulation.html" class="nav-item" data-nav="energy"><span class="nav-icon">◔</span> <span>Energy Simulations</span></a>
+      <a href="copilot_ai.html" class="nav-item" data-nav="copilot"><span class="nav-icon">✦</span> <span>Co-Pilot AI</span></a>
+      <a href="audit_and_esg_report.html" class="nav-item" data-nav="audit"><span class="nav-icon">◫</span> <span>Audit &amp; ESG Reports</span></a>
+      <a href="facility_config.html" class="nav-item" data-nav="config"><span class="nav-icon">⚙</span> <span>Facility Config</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-item" id="collapseBtn" data-nav-action="collapse-sidebar"><span class="nav-icon">≡</span> <span>Collapse sidebar</span></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- Toolbar -->
+    <section class="twin-toolbar">
+      <div class="toolbar-left">
+        <h2>◈ 3D Warehouse Twin <span class="live-dot"></span></h2>
+        <p class="toolbar-sub">Interactive thermodynamic model · last sync <span id="lastSync" data-cc="updated-ticker">0.4</span>s ago</p>
+      </div>
+      <div class="toolbar-right">
+        <label class="toggle"><input type="checkbox" id="toggleDoors" checked> Doors</label>
+        <label class="toggle"><input type="checkbox" id="toggleSensors" checked> IoT Sensors</label>
+        <label class="toggle"><input type="checkbox" id="toggleEquipment" checked> Equipment</label>
+        <label class="toggle"><input type="checkbox" id="toggleAirflow" checked> Airflow Pathways</label>
+        <select id="viewSelect" class="view-select">
+          <option>Top-Down Thermal Map</option>
+          <option selected>Isometric View</option>
+          <option>Cutaway View</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Twin Body -->
+    <section class="twin-body">
+
+      <!-- 3D Scene -->
+      <div class="scene-wrapper" id="sceneWrapper">
+        <div class="scene-grid"></div>
+
+        <div class="scene" id="scene">
+          <!-- Zone A -->
+          <div class="zone zone-a" data-zone="A" id="zoneA">
+            <div class="zone-top">
+              <div class="zone-name">ZONE A · Ice Cream Vault</div>
+              <div class="zone-temp" id="tempA">-18.2°C</div>
+            </div>
+            <div class="zone-side zone-side-left"></div>
+            <div class="zone-side zone-side-right"></div>
+            <div class="door-icon" data-door="A"></div>
+            <div class="equipment-icon" data-equip="A">❄</div>
+            <div class="sensor-dot" data-sensor="A"></div>
+          </div>
+
+          <!-- Zone B -->
+          <div class="zone zone-b" data-zone="B" id="zoneB">
+            <div class="zone-top">
+              <div class="zone-name">ZONE B · Frozen Meat &amp; Seafood</div>
+              <div class="zone-temp" id="tempB">-20.0°C</div>
+            </div>
+            <div class="zone-side zone-side-left"></div>
+            <div class="zone-side zone-side-right"></div>
+            <div class="door-icon" data-door="B"></div>
+            <div class="equipment-icon" data-equip="B">❄</div>
+            <div class="sensor-dot" data-sensor="B"></div>
+          </div>
+
+          <!-- Zone C (alert / bay3) -->
+          <div class="zone zone-c alert" data-zone="C" id="bay3">
+            <div class="zone-top">
+              <div class="zone-name">ZONE C · Deep-Freeze Pharmaceuticals</div>
+              <div class="zone-temp" id="tempC">-22.0°C</div>
+              <div class="zone-target" id="targetC" style="font-size:10.5px; color:var(--muted); margin-top:2px;">Target: -22.0°C</div>
+            </div>
+            <div class="zone-side zone-side-left"></div>
+            <div class="zone-side zone-side-right"></div>
+            <div class="door-icon open" data-door="C"></div>
+            <div class="equipment-icon" data-equip="C">❄</div>
+            <div class="sensor-dot" data-sensor="C"></div>
+            <div class="bay-label">BAY 3 · OPEN</div>
+          </div>
+
+          <!-- Airflow paths -->
+          <svg class="airflow" viewBox="0 0 800 400" preserveAspectRatio="none">
+            <path d="M 80 300 Q 250 250 400 300" />
+            <path d="M 400 300 Q 550 250 720 300" />
+          </svg>
+        </div>
+
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+
+      <!-- Telemetry Panel -->
+      <aside class="telemetry-panel">
+        <div class="panel-header">
+          <h3>⚡ Real-Time Energy &amp; Environment</h3>
+          <span class="live-dot small"></span>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-top"><span>Current Power</span><span class="ico">⚡</span></div>
+            <div class="metric-value"><span id="metricPower">248</span> <small>kW</small></div>
+            <div class="metric-foot negative">↘ -15% vs last hour</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><span>Avg. Temperature</span><span class="ico">🌡</span></div>
+            <div class="metric-value"><span id="metricTemp">-19.2</span> <small>°C</small></div>
+            <div class="metric-foot">Target -20.0°C</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><span>Humidity</span><span class="ico">💧</span></div>
+            <div class="metric-value"><span id="metricHumidity">78</span> <small>%</small></div>
+            <div class="metric-foot">Target 70%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><span>Estimated CO₂</span><span class="ico">🍃</span></div>
+            <div class="metric-value"><span id="metricCo2">4.8</span> <small>t/day</small></div>
+            <div class="metric-foot negative">+18% vs baseline</div>
+          </div>
+        </div>
+
+        <div class="anomaly-panel">
+          <h4>⚠ Anomaly Detection</h4>
+          <div class="anomaly-list">
+            <div class="anomaly-item" id="anomalyDoor" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong>Bay 3 door open</strong>
+                <div id="anomalyDoorTime" style="font-size:12px; color:var(--muted);">42s · Zone C</div>
+              </div>
+              <button id="closeDoorAnomalyBtn" style="background:var(--danger); border:none; color:#fff; font-weight:700; font-size:11px; padding:5px 9px; border-radius:6px; cursor:pointer;" onclick="closeBay3Door()">Close Door</button>
+            </div>
+            <div class="anomaly-item">
+              <strong>Compressor 2 over baseline</strong>
+              <span>18% above · Zone B</span>
+            </div>
+            <div class="anomaly-item">
+              <strong>Evaporator 1 slight icing</strong>
+              <span>Detected · Zone A</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="copilot-btn" id="copilotBtn">✦ Energy Co-Pilot · Suggest savings</button>
+      </aside>
+    </section>
+
+    <!-- Co-Pilot Modal -->
+    <div class="copilot-modal" id="copilotModal">
+      <div class="copilot-card">
+        <div class="copilot-head">
+          <strong>✦ Energy Co-Pilot</strong>
+          <button id="closeCopilot">✕</button>
+        </div>
+        <div class="copilot-body" id="copilotBody">
+          <p class="bot-msg">Hi! I'm monitoring your facility. Ask me anything about energy waste, e.g. <i>"Why is power high?"</i></p>
+        </div>
+        <div class="copilot-input">
+          <input type="text" id="copilotInput" placeholder="Type your question…" />
+          <button id="copilotSend">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ==================== SCRIPT ==================== -->
+<script src="cc-store.js"></script>
+<script src="cc-sim.js"></script>
+<script src="cc-backend.js"></script>
+
+<script>
+/* ============================================================
+   1. CLOCK
+   ============================================================ */
+function updateClock() {
+  const el = document.getElementById("clock");
+  if (!el) return;
+  const now = new Date();
+  let h = now.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+  el.textContent = `${String(h).padStart(2,"0")}:${m}:${s} ${ampm}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ============================================================
+   2. TWIN STATE RENDERER (Driven by CC Store & Simulation)
+   ============================================================ */
+function renderTwin() {
+  if (!window.CC) return;
+
+  const zones = CC.get("facility.zones") || [];
+  const zA = zones.find(z => z.id === "A") || { temp: -18.2, status: "normal" };
+  const zB = zones.find(z => z.id === "B") || { temp: -20.0, status: "normal" };
+  const zC = zones.find(z => z.id === "C") || { temp: -22.0, status: "warning" };
+
+  const tA = document.getElementById("tempA");
+  const tB = document.getElementById("tempB");
+  const tC = document.getElementById("tempC");
+  const targetC = document.getElementById("targetC");
+  if (tA) tA.textContent = zA.temp.toFixed(1) + "°C";
+  if (tB) tB.textContent = zB.temp.toFixed(1) + "°C";
+  if (tC) tC.textContent = zC.temp.toFixed(1) + "°C";
+  if (targetC && zC.target !== undefined) {
+    targetC.textContent = `Target: ${Number(zC.target).toFixed(1)}°C`;
+  }
+
+  // Zone C visual alert class
+  const zoneCEl = document.querySelector(".zone-c");
+  const bay3Open = Boolean(CC.get("simulation.bay3DoorOpen"));
+  if (zoneCEl) {
+    zoneCEl.classList.toggle("alert", bay3Open || zC.status === "alert" || zC.status === "warning");
+  }
+
+  // Metric panel
+  const totalLoad = Math.round(CC.get("facility.totalLoad") || 251);
+  const mp = document.getElementById("metricPower");
+  const tl = document.getElementById("totalLoad");
+  if (mp) mp.textContent = totalLoad;
+  if (tl) tl.textContent = totalLoad;
+
+  const avg = (zA.temp + zB.temp + zC.temp) / 3;
+  const mt = document.getElementById("metricTemp");
+  const mh = document.getElementById("metricHumidity");
+  const mc = document.getElementById("metricCo2");
+  if (mt) mt.textContent = avg.toFixed(1);
+  if (mh) mh.textContent = CC.get("facility.humidity") ?? 78;
+  if (mc) mc.textContent = (CC.get("facility.co2Intensity") ?? 4.8).toFixed(1);
+
+  // Door open duration & close button
+  const doorSec = CC.get("simulation.doorOpenSeconds") || 0;
+  const ad = document.getElementById("anomalyDoorTime");
+  const btnClose = document.getElementById("closeDoorAnomalyBtn");
+  if (ad) {
+    ad.textContent = bay3Open ? `${doorSec}s · Zone C` : `Sealed · Zone C`;
+  }
+  if (btnClose) {
+    btnClose.style.display = bay3Open ? "inline-block" : "none";
+  }
+}
+
+function closeBay3Door() {
+  if (window.CC) {
+    CC.set("simulation.bay3DoorOpen", false);
+    CC.set("simulation.doorOpenSeconds", 0);
+    const alerts = (CC.get("alerts") || []).filter(a => a.id !== "BAY-03");
+    CC.set("alerts", alerts);
+    CC.emit("camera:event", {
+      cameraId: "CAM-03",
+      type: "DOOR_CLOSED",
+      details: "Bay 3 loading door closed and sealed. Timer reset to 0s.",
+      timestamp: Date.now()
+    });
+  }
+  renderTwin();
+}
+
+// Subscribe to store updates
+if (window.CC) {
+  CC.subscribe("facility.zones", renderTwin);
+  CC.subscribe("facility.totalLoad", renderTwin);
+  CC.subscribe("simulation", renderTwin);
+  CC.on("sim:tick", renderTwin);
+  CC.on("state:ready", renderTwin);
+}
+window.addEventListener("load", renderTwin);
+
+/* ============================================================
+   3. TOGGLE OVERLAYS
+   ============================================================ */
+const scene = document.getElementById("scene");
+const toggles = {
+  toggleDoors:     "hide-doors",
+  toggleSensors:   "hide-sensors",
+  toggleEquipment: "hide-equipment",
+  toggleAirflow:   "hide-airflow"
+};
+Object.keys(toggles).forEach(id => {
+  const el = document.getElementById(id);
+  if (el && scene) {
+    el.addEventListener("change", e => {
+      scene.classList.toggle(toggles[id], !e.target.checked);
+    });
+  }
+});
+
+/* ============================================================
+   4. VIEW SELECTOR
+   ============================================================ */
+const viewSel = document.getElementById("viewSelect");
+if (viewSel && scene) {
+  viewSel.addEventListener("change", e => {
+    const v = e.target.value;
+    if (v === "Top-Down Thermal Map") {
+      scene.style.transform = "rotateX(80deg) rotateZ(0deg)";
+    } else if (v === "Isometric View") {
+      scene.style.transform = "rotateX(55deg) rotateZ(-45deg)";
+    } else {
+      scene.style.transform = "rotateX(50deg) rotateZ(-30deg) scale(0.9)";
+    }
+  });
+}
+
+/* ============================================================
+   5. ZONE HOVER TOOLTIP
+   ============================================================ */
+const tooltip = document.getElementById("tooltip");
+const sceneWrapper = document.getElementById("sceneWrapper");
+
+document.querySelectorAll(".zone").forEach(zone => {
+  zone.addEventListener("mousemove", e => {
+    if (!window.CC || !sceneWrapper || !tooltip) return;
+    const key = zone.dataset.zone;
+    const zones = CC.get("facility.zones") || [];
+    const data = zones.find(z => z.id === key);
+    if (!data) return;
+    const rect = sceneWrapper.getBoundingClientRect();
+    tooltip.style.left = (e.clientX - rect.left) + "px";
+    tooltip.style.top  = (e.clientY - rect.top) + "px";
+    tooltip.innerHTML =
+      `<strong>Zone ${key}</strong> · ${data.temp.toFixed(1)}°C<br/>` +
+      `Status: ${data.status}`;
+    tooltip.classList.add("show");
+  });
+  zone.addEventListener("mouseleave", () => tooltip && tooltip.classList.remove("show"));
+});
+
+/* ============================================================
+   6. TOP ALERT → SCROLL TO ANOMALY & FLASH
+   ============================================================ */
+const topAlertEl = document.getElementById("topAlert");
+if (topAlertEl) {
+  topAlertEl.addEventListener("click", () => {
+    const el = document.getElementById("anomalyDoor");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 1500);
+    }
+    const bay3 = document.getElementById("bay3");
+    if (bay3) {
+      bay3.classList.add("flash");
+      setTimeout(() => bay3.classList.remove("flash"), 1800);
+    }
+  });
+}
+
+// Auto-flash Bay 3 if arrived with #bay3
+window.addEventListener("load", () => {
+  if (window.location.hash === "#bay3" || window.location.hash.includes("bay3")) {
+    setTimeout(() => {
+      const bay3 = document.getElementById("bay3");
+      if (bay3) {
+        bay3.scrollIntoView({ behavior: "smooth", block: "center" });
+        bay3.classList.add("flash");
+        setTimeout(() => bay3.classList.remove("flash"), 2500);
+      }
+    }, 300);
+  }
+});
+
+/* ============================================================
+   7. ENERGY CO-PILOT MODAL + SHARED RAG RESPONSES
+   ============================================================ */
+const copilotModal = document.getElementById("copilotModal");
+const copilotBtn = document.getElementById("copilotBtn");
+if (copilotBtn && copilotModal) {
+  copilotBtn.addEventListener("click", () => {
+    copilotModal.classList.add("show");
+    setTimeout(() => {
+      const inp = document.getElementById("copilotInput");
+      if (inp) inp.focus();
+    }, 100);
+  });
+}
+const closeCopilot = document.getElementById("closeCopilot");
+if (closeCopilot && copilotModal) {
+  closeCopilot.addEventListener("click", () => {
+    copilotModal.classList.remove("show");
+  });
+}
+if (copilotModal) {
+  copilotModal.addEventListener("click", e => {
+    if (e.target === copilotModal) copilotModal.classList.remove("show");
+  });
+}
+
+function getBotResponse(text) {
+  const q = text.toLowerCase();
+  const CC = window.CC;
+  const simApplied = CC && CC.get("simulation.applied");
+  const simReduction = (CC && CC.get("simulation.results.reduction")) || 14.3;
+  const power = Math.round((CC && CC.get("facility.totalLoad")) || 251);
+  const doorSec = (CC && CC.get("simulation.doorOpenSeconds")) || 42;
+  const zones = (CC && CC.get("facility.zones")) || [];
+  const zA = zones.find(z => z.id === "A")?.temp.toFixed(1) || "-18.2";
+  const zB = zones.find(z => z.id === "B")?.temp.toFixed(1) || "-20.0";
+  const zC = zones.find(z => z.id === "C")?.temp.toFixed(1) || "-22.0";
+
+  if (q.includes("sim") || q.includes("schedule") || q.includes("saving")) {
+    if (simApplied) {
+      return `The <b>Optimized Schedule</b> is active across the facility, yielding a <b>${simReduction}% reduction</b> in cooling load!`;
+    } else {
+      return `Head to the <a href="energy_simulation.html" onclick="CC.go('energy')" style="color:var(--accent);">Energy Simulations</a> page to run and apply an off-peak night shift schedule for ~14% savings.`;
+    }
+  }
+  if (q.includes("power") || q.includes("energy")) {
+    return `Current power draw is <b>${power} kW</b>. Zone C door open <b>${doorSec}s</b>, adding ~28 kW compressor surge. Recommendation: seal Bay 3 now and precool during off-peak hours.`;
+  }
+  if (q.includes("door") || q.includes("bay 3") || q.includes("bay3")) {
+    return `Bay 3 has been open <b>${doorSec}s</b>. Zone C is at ${zC}°C. Dispatch staff to close it or run the emergency close action.`;
+  }
+  if (q.includes("temp") || q.includes("warm") || q.includes("cold")) {
+    return `Zone temps → A: ${zA}°C, B: ${zB}°C, C: ${zC}°C. Zone C is trending warm due to ambient ingress.`;
+  }
+  if (q.includes("co2") || q.includes("carbon") || q.includes("emission")) {
+    const co2 = (CC && CC.get("facility.co2Intensity")) || 4.8;
+    return `Estimated CO₂ output is <b>${co2} t/day</b>. Closing Bay 3 could cut ~0.6 t/day.`;
+  }
+  if (q.includes("humid")) {
+    const hum = (CC && CC.get("facility.humidity")) || 78;
+    return `Humidity is currently <b>${hum}%</b> (target 70%). Slightly high — check door seals on Zone C.`;
+  }
+  return `I'm monitoring Zones A, B, and C in real time. Ask me about <i>power</i>, <i>temperature</i>, <i>doors</i>, <i>humidity</i>, or <i>CO₂</i>.`;
+}
+
+function sendMessage() {
+  const input = document.getElementById("copilotInput");
+  const body  = document.getElementById("copilotBody");
+  if (!input || !body) return;
+  const text  = input.value.trim();
+  if (!text) return;
+
+  body.insertAdjacentHTML("beforeend", `<div class="user-msg">${text}</div>`);
+  input.value = "";
+  body.scrollTop = body.scrollHeight;
+
+  setTimeout(() => {
+    const reply = getBotResponse(text);
+    body.insertAdjacentHTML("beforeend", `<div class="bot-msg">${reply}</div>`);
+    body.scrollTop = body.scrollHeight;
+
+    if (window.CC) {
+      const history = CC.get("copilot.conversationHistory") || [];
+      history.push({ role: "user", text, timestamp: Date.now() });
+      history.push({ role: "ai", text: reply, timestamp: Date.now() });
+      CC.set("copilot.conversationHistory", history);
+      CC.emit("copilot:message", { text, reply });
+    }
+  }, 400);
+}
+
+const sendBtn = document.getElementById("copilotSend");
+if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+const cpInput = document.getElementById("copilotInput");
+if (cpInput) {
+  cpInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendMessage();
+  });
+}
+</script>
+</body>
+</html>

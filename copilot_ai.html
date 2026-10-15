@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ColdChain-Twin | Co-Pilot AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0B1120;
+  --panel: #111827;
+  --panel-2: #0e1524;
+  --border: #1F2937;
+  --border-soft: #172033;
+  --accent: #00D8FF;
+  --green: #22c55e;
+  --green-soft: #4ade80;
+  --warn: #F59E0B;
+  --danger: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --muted-2: #64748B;
+}
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 14px; overflow-x: hidden;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Topbar */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, #0d1524 0%, #0B1120 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand-logo {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #00D8FF, #0070b8);
+  border-radius: 10px; font-size: 22px; color: #fff;
+  box-shadow: 0 0 22px rgba(0,216,255,0.35);
+}
+.brand h1 { font-size: 20px; font-weight: 800; }
+.brand h1 .accent { color: var(--accent); }
+.brand p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.topbar-mid { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.facility-line { font-size: 10.5px; letter-spacing: 1.8px; color: var(--muted); text-transform: uppercase; }
+.tagline { font-size: 13.5px; color: #cbd5e1; }
+.topbar-right { display: flex; align-items: center; gap: 20px; }
+.kpi-block { display: flex; flex-direction: column; align-items: flex-end; }
+.kpi-label { font-size: 10px; letter-spacing: 1.6px; color: var(--muted); }
+.kpi-value { font-size: 22px; font-weight: 800; margin-top: 2px; }
+.kpi-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; }
+.alert-pill {
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+  background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.45);
+  border-radius: 8px; color: var(--warn); font-weight: 700; font-size: 12.5px;
+  cursor: pointer; animation: pulseAlert 2s infinite;
+}
+@keyframes pulseAlert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+}
+
+/* Layout */
+.app-layout { display: flex; min-height: calc(100vh - 72px); }
+.sidebar {
+  width: 250px; background: #0a0f1c; border-right: 1px solid var(--border);
+  padding: 22px 14px; display: flex; flex-direction: column; gap: 8px;
+  flex-shrink: 0; position: sticky; top: 72px; height: calc(100vh - 72px);
+  overflow-y: auto;
+}
+.sidebar-section-title { font-size: 10px; letter-spacing: 2px; color: var(--muted-2); padding: 0 12px 12px; text-transform: uppercase; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+  border-radius: 8px; color: var(--muted); text-decoration: none;
+  font-size: 13.5px; font-weight: 500; transition: all 0.2s;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { background: rgba(0,216,255,0.06); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,216,255,0.18), rgba(0,216,255,0.02));
+  color: var(--accent); border-left-color: var(--accent); font-weight: 600;
+}
+.nav-icon { width: 20px; text-align: center; font-size: 15px; }
+
+/* Main */
+.main-content {
+  flex: 1; padding: 22px 26px 80px; display: flex; flex-direction: column; gap: 20px; min-width: 0;
+  max-width: 1000px; margin: 0 auto;
+}
+.section-head { display: flex; justify-content: space-between; align-items: center; }
+.section-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #42d4b2; box-shadow: 0 0 10px #42d4b2; }
+
+/* Chat box */
+.chat-container {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  display: flex; flex-direction: column; height: 560px; overflow: hidden;
+}
+.chat-header {
+  padding: 14px 18px; border-bottom: 1px solid var(--border-soft); background: var(--panel-2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.chat-messages {
+  flex: 1; padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+}
+.msg {
+  max-width: 80%; padding: 12px 16px; border-radius: 10px; line-height: 1.6;
+  font-size: 13.5px;
+}
+.msg.user {
+  align-self: flex-end; background: linear-gradient(135deg, rgba(0,216,255,0.2), rgba(0,112,184,0.25));
+  border: 1px solid rgba(0,216,255,0.4); color: var(--text);
+}
+.msg.ai {
+  align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border-soft);
+  color: #cbd5e1;
+}
+.msg.ai b { color: var(--text); }
+.msg.ai .ai-badge { font-size: 10px; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+
+.chips-row {
+  display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 18px;
+  border-top: 1px solid var(--border-soft); background: #0b101c;
+}
+.chip-btn {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  font-size: 11.5px; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  transition: all 0.2s; font-family: inherit;
+}
+.chip-btn:hover { border-color: var(--accent); color: var(--text); }
+
+.chat-input-row {
+  padding: 14px 18px; display: flex; gap: 10px; border-top: 1px solid var(--border-soft);
+  background: var(--panel-2);
+}
+.chat-input {
+  flex: 1; background: #070c16; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; color: var(--text); font-family: inherit; font-size: 13.5px;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; background: linear-gradient(135deg, var(--accent), #0070b8);
+  color: #001722; font-family: inherit; transition: all 0.2s;
+}
+.btn:hover { opacity: 0.9; }
+</style>
+</head>
+<body data-page="copilot">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo">❄</div>
+    <div>
+      <h1>ColdChain<span class="accent">-Twin</span></h1>
+      <p>Refrigerated Warehouse &amp; Cold-Storage Optimizer</p>
+    </div>
+  </div>
+
+  <div class="topbar-mid">
+    <div class="facility-line">North Dock Facility · Control Room</div>
+    <div class="tagline">Less Energy Waste. Lower Emissions. Smarter Cold Chains.</div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="kpi-block">
+      <span class="kpi-label">TOTAL LOAD</span>
+      <div class="kpi-value"><span id="totalLoad" data-cc="total-load">251</span><span class="unit">kW</span></div>
+    </div>
+    <div class="alert-pill" id="alertPill" data-cc="alert-pill">
+      <span>⚠</span><span>WARNING: BAY 3 LEAK</span>
+    </div>
+  </div>
+</header>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar" data-cc="sidebar">
+    <div class="sidebar-section-title">Facility Control</div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <a href="overview.html" class="nav-item" data-nav="overview"><span class="nav-icon">◎</span><span class="nav-text">Overview</span></a>
+      <a href="live_camera_feeds.html" class="nav-item" data-nav="cameras"><span class="nav-icon">▣</span><span class="nav-text">Live Camera Feeds</span></a>
+      <a href="3dwarehouse.html" class="nav-item" data-nav="twin"><span class="nav-icon">◈</span><span class="nav-text">3D Warehouse Twin</span></a>
+      <a href="energy_simulation.html" class="nav-item" data-nav="energy"><span class="nav-icon">◔</span><span class="nav-text">Energy Simulations</span></a>
+      <a href="copilot_ai.html" class="nav-item active" data-nav="copilot"><span class="nav-icon">✦</span><span class="nav-text">Co-Pilot AI</span></a>
+      <a href="audit_and_esg_report.html" class="nav-item" data-nav="audit"><span class="nav-icon">◫</span><span class="nav-text">Audit &amp; ESG Reports</span></a>
+      <a href="facility_config.html" class="nav-item" data-nav="config"><span class="nav-icon">⚙</span><span class="nav-text">Facility Config</span></a>
+    </nav>
+    <div style="margin-top:auto; padding-top:16px; border-top:1px solid var(--border-soft);">
+      <a href="#" class="nav-item" id="collapseBtn" data-nav-action="collapse-sidebar"><span class="nav-icon">≡</span><span class="nav-text">Collapse sidebar</span></a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="section-head">
+      <div>
+        <div class="section-title"><span class="live-dot"></span> Offline Cold-Storage Energy Co-Pilot</div>
+        <div class="panel-sub">Fine-tuned Operations Assistant · Thermodynamic RAG Grounding · <span data-cc="updated-ticker">last sync 0.4s ago</span></div>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-header">
+        <span class="mono" style="font-size:12px; color:#42d4b2;">● Model: Llama 3 / Ops Intelligence Fine-Tune (Local Engine)</span>
+        <button style="background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:12px;" onclick="clearChat()">Clear History</button>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+      </div>
+
+      <div class="chips-row">
+        <button class="chip-btn" onclick="sendQuery('Generate ESG Audit Report')">Generate ESG Audit Report</button>
+        <button class="chip-btn" onclick="sendQuery('Diagnose Compressor 2 Overdrive')">Diagnose Compressor 2 Overdrive</button>
+        <button class="chip-btn" onclick="sendQuery('Mitigate Bay 3 Door Ingress')">Mitigate Bay 3 Door Ingress</button>
+      </div>
+
+      <form class="chat-input-row" onsubmit="handleSend(event)">
+        <input type="text" id="userInput" class="chat-input" placeholder="Ask about thermodynamic anomalies, compressor health, or energy savings…" autocomplete="off"/>
+        <button type="submit" class="btn">Send</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="cc-store.js"></script>
+<script src="cc-sim.js"></script>
+<script src="cc-backend.js"></script>
+
+<script>
+const messagesEl = document.getElementById('chatMessages');
+const inputEl = document.getElementById('userInput');
+
+function renderHistory() {
+  if (!window.CC || !messagesEl) return;
+  const history = CC.get('copilot.conversationHistory') || [];
+  messagesEl.innerHTML = '';
+
+  if (history.length === 0) {
+    history.push({
+      role: 'ai',
+      text: 'Hello Operator. I am continuously monitoring <b>Facility ND-04</b> telemetry. Standing by for facility commands.'
+    });
+  }
+
+  history.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = `msg ${msg.role}`;
+    if (msg.role === 'ai') {
+      div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${msg.text}`;
+    } else {
+      div.textContent = msg.text;
+    }
+    messagesEl.appendChild(div);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addMessage(text, role) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (role === 'ai') {
+    div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${text}`;
+  } else {
+    div.textContent = text;
+  }
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function handleSend(e) {
+  e.preventDefault();
+  const q = inputEl.value.trim();
+  if (!q) return;
+  inputEl.value = '';
+  sendQuery(q);
+}
+
+function sendQuery(text) {
+  addMessage(text, 'user');
+
+  if (window.CC) {
+    const history = CC.get('copilot.conversationHistory') || [];
+    history.push({ role: 'user', text, timestamp: Date.now() });
+    CC.set('copilot.conversationHistory', history, { silent: true });
+  }
+
+  setTimeout(() => {
+    let reply = '';
+    const l = text.toLowerCase();
+    const CC = window.CC;
+    const power = (CC && Math.round(CC.get('facility.totalLoad'))) || 251;
+    const doorSec = (CC && CC.get('simulation.doorOpenSeconds')) || 42;
+    const co2Tonnes = (CC && CC.get('esg.co2AvoidedTonnes')) || 12.4;
+    const kwh = (CC && CC.get('esg.energySavedKwh')) || 28600;
+
+    if (l.includes('esg') || l.includes('audit')) {
+      reply = `<b>Audit Snapshot Generated:</b><br/>• <b>${co2Tonnes} tonnes CO₂</b> avoided this month.<br/>• <b>${kwh.toLocaleString()} kWh</b> saved across Zones A & B through off-peak night precooling.<br/>• Direct energy bill savings: <b>₹2.1 Lakhs ($2,600 USD)</b>.<br/>You can export the full verified report in the <a href="audit_and_esg_report.html" onclick="CC.go('audit')" style="color:#00D8FF">Audit & ESG Suite</a>.`;
+    } else if (l.includes('compressor')) {
+      reply = '<b>Compressor 2 Diagnostic:</b><br/>Operating suction pressure is 2.1 bar, superheat has dropped to 3.2K. The Aisle 2 pallet obstruction is restricting evaporator return airflow by 15%.<br/><b>Recommendation:</b> Clear Aisle 2 immediately to restore 350 CFM circulation before initiating defrost.';
+    } else if (l.includes('door') || l.includes('bay') || l.includes('seal')) {
+      reply = `<b>Mitigation Plan for Bay 3:</b><br/>• Door open duration: <b>${doorSec}s</b> (Limit 20s).<br/>• Replacing degraded silicone flap seal saves ~8% load.<br/>• Shift blast cooling to 02:00–05:00 window to lower peak kW penalty by 12%.`;
+    } else {
+      reply = `<b>Facility ND-04 Operations Review:</b><br/>Current facility power draw is <b>${power} kW</b>. Thermal monitoring is active across Zones A, B, and C. Let me know if you would like me to compile an audit report or simulate an off-peak shift schedule.`;
+    }
+
+    addMessage(reply, 'ai');
+
+    if (window.CC) {
+      const history = CC.get('copilot.conversationHistory') || [];
+      history.push({ role: 'ai', text: reply, timestamp: Date.now() });
+      CC.set('copilot.conversationHistory', history);
+      CC.emit('copilot:message', { text, reply });
+    }
+  }, 400);
+}
+
+function clearChat() {
+  if (window.CC) {
+    const greeting = [{
+      role: 'ai',
+      text: 'History cleared. Standing by for facility commands.',
+      timestamp: Date.now()
+    }];
+    CC.set('copilot.conversationHistory', greeting);
+  }
+  renderHistory();
+}
+
+window.addEventListener('load', () => {
+  renderHistory();
+  if (window.CC) {
+    const pending = CC.get('copilot.pendingPrompt');
+    if (pending) {
+      CC.set('copilot.pendingPrompt', '');
+      const text = typeof pending === 'object' ? (pending.text || pending.prompt || JSON.stringify(pending)) : String(pending);
+      if (inputEl) {
+        inputEl.value = text;
+      }
+      sendQuery(text);
+    }
+  }
+});
+</script>
+</body>
+</html>
