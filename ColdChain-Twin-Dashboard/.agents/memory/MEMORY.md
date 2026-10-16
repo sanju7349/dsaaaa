@@ -1,0 +1,1 @@
+- [Client-only ColdChain simulations](coldchain-client-only.md) — preserve zero-backend, zero-network behavior for feeds, calculations, and the offline co-pilot.
