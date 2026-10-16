@@ -11,6 +11,7 @@
       this.mode = 'SIMULATED';
       this.ws = null;
       this.connectionTimeout = null;
+      this.simulationStream = null;
       this.facilityId = (global.CC && global.CC.get('facility.id')) || 'ND-04';
     }
 
@@ -26,12 +27,110 @@
         }
       } catch (_) {}
 
+      void this.syncFacilityConfig();
+      const urlParams = new URLSearchParams(window.location.search);
+      let streamEnabled = urlParams.get('stream') === '1';
+      try { streamEnabled = streamEnabled || localStorage.getItem('cc-simulation-stream') === 'true'; } catch (_) {}
+      if (streamEnabled) this.setSimulationStream(true);
+
+      if (global.CC) {
+        global.CC.on('config:saved', (facility) => {
+          void this.saveFacilityConfig(facility);
+        });
+      }
+
       if (desiredMode === 'LIVE') {
         const brokerUrl = localStorage.getItem('cc-mqtt-url') || 'wss://broker.hivemq.com:8884/mqtt';
         this.connect(brokerUrl);
       } else {
         this.setMode('SIMULATED');
       }
+    }
+
+    async syncFacilityConfig() {
+      try {
+        const response = await fetch(`/api/facility/config?facilityId=${encodeURIComponent(this.facilityId)}`);
+        if (!response.ok) throw new Error(`Facility config request failed (${response.status}).`);
+        const result = await response.json();
+        const config = result && result.config;
+        if (!config || !global.CC) return;
+
+        global.CC.patch({
+          facility: {
+            id: config.facilityId,
+            name: config.facilityName,
+            ...(config.zoneConfigs || {})
+          }
+        });
+        this.facilityId = config.facilityId;
+        global.CC.emit('facility:config:loaded', config);
+        console.info('[CC-Backend] Facility configuration synchronized from API.');
+      } catch (err) {
+        console.warn('[CC-Backend] Facility API unavailable; retaining local configuration.', err);
+      }
+    }
+
+    async saveFacilityConfig(facility) {
+      if (!facility || typeof facility !== 'object') return;
+      try {
+        const response = await fetch('/api/facility/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            facilityId: facility.id || this.facilityId,
+            facilityName: facility.name || null,
+            zoneConfigs: {
+              zones: facility.zones || [],
+              compressors: facility.compressors || [],
+              ambient: facility.ambient,
+              humidity: facility.humidity,
+              alarmThermal: facility.alarmThermal,
+              alarmDoor: facility.alarmDoor,
+              region: facility.region,
+              timezone: facility.timezone
+            }
+          })
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error || `Facility config save failed (${response.status}).`);
+        }
+        this.facilityId = facility.id || this.facilityId;
+        console.info('[CC-Backend] Facility configuration synchronized to API.');
+      } catch (err) {
+        console.warn('[CC-Backend] Could not synchronize facility configuration to API.', err);
+      }
+    }
+
+    setSimulationStream(enabled) {
+      try { localStorage.setItem('cc-simulation-stream', enabled ? 'true' : 'false'); } catch (_) {}
+      if (!enabled) {
+        if (this.simulationStream) this.simulationStream.close();
+        this.simulationStream = null;
+        return;
+      }
+      if (this.simulationStream) return;
+
+      this.simulationStream = new EventSource('/api/simulation/stream');
+      this.simulationStream.addEventListener('telemetry', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          const record = payload.row || payload.data || payload.step;
+          const ambient = Number(record && record.ambient_temperature);
+          if (!global.CC || !record) return;
+          global.CC.set('simulation.liveTelemetry', record);
+          if (Number.isFinite(ambient)) {
+            global.CC.set('facility.ambient', ambient);
+            global.CC.set('simulation.ambient', ambient);
+          }
+        } catch (err) {
+          console.warn('[CC-Backend] Invalid simulation stream payload.', err);
+        }
+      });
+      this.simulationStream.onerror = () => {
+        console.warn('[CC-Backend] Simulation SSE disconnected; EventSource will retry.');
+      };
+      console.info('[CC-Backend] Subscribed to simulation telemetry SSE.');
     }
 
     setMode(mode) {
@@ -152,4 +251,5 @@
   }
 
   global.CC_Backend = backend;
+  global.CC_SetSimulationStream = (enabled) => backend.setSimulationStream(Boolean(enabled));
 })(typeof window !== 'undefined' ? window : this);

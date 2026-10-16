@@ -11,6 +11,15 @@ import {
 import { parseTelemetryFile } from "./telemetryParser";
 import { auditTelemetryStep } from "./agentBridge";
 import { logger } from "../lib/logger";
+import {
+  DEFAULT_SHIPMENT_ID,
+  loadLatestTelemetryDataset,
+  loadTelemetryDataset,
+  loadUnacknowledgedAlerts,
+  persistAlertIncident,
+  persistTelemetryDataset,
+  type StoredAlertIncident,
+} from "./telemetryRepository";
 
 export class SimulationEngine {
   public records: TelemetryPoint[] = [];
@@ -21,6 +30,10 @@ export class SimulationEngine {
   private sseClients: Set<Response> = new Set();
   private lastAgentVerdict: AgentVerdict | null = null;
   private isProcessingStep: boolean = false;
+  private setpointOverride: number | null = null;
+  private incidentKeys = new Set<string>();
+  private recentIncidents: StoredAlertIncident[] = [];
+  public activeShipmentId = DEFAULT_SHIPMENT_ID;
 
   constructor() {
     this.autoLoadDefault();
@@ -48,16 +61,20 @@ export class SimulationEngine {
     }
   }
 
-  public loadDataset(points: TelemetryPoint[]) {
+  public loadDataset(points: TelemetryPoint[], shipmentId = DEFAULT_SHIPMENT_ID) {
     if (!points || points.length === 0) {
       throw new Error("Cannot load empty dataset.");
     }
 
     this.pause();
     this.records = points;
+    this.activeShipmentId = shipmentId;
     this.currentIndex = 0;
     this.isPlaying = false;
     this.lastAgentVerdict = null;
+    this.setpointOverride = null;
+    this.incidentKeys.clear();
+    this.recentIncidents = [];
 
     logger.info({ totalRecords: this.records.length }, "Simulation dataset loaded");
 
@@ -71,6 +88,21 @@ export class SimulationEngine {
     }
 
     this.broadcastStatus();
+  }
+
+  public async loadUploadedDataset(points: TelemetryPoint[], shipmentId: string): Promise<boolean> {
+    const persisted = await persistTelemetryDataset(shipmentId, points);
+    const storedPoints = persisted ? await loadTelemetryDataset(shipmentId) : null;
+    this.loadDataset(storedPoints?.length ? storedPoints : points, shipmentId);
+    return Boolean(storedPoints?.length);
+  }
+
+  public async restorePersistedDataset(): Promise<boolean> {
+    const dataset = await loadLatestTelemetryDataset();
+    if (!dataset) return false;
+    this.loadDataset(dataset.points, dataset.shipmentId);
+    logger.info({ shipmentId: dataset.shipmentId, totalRecords: dataset.points.length }, "Restored simulation dataset from PostgreSQL");
+    return true;
   }
 
   public loadLocalDataset(customPath?: string): number {
@@ -147,7 +179,7 @@ export class SimulationEngine {
     this.clearTimer();
     this.isPlaying = false;
 
-    const currentRecord = this.records[this.currentIndex] ?? null;
+    const currentRecord = this.getActiveRecord();
 
     if (currentRecord) {
       await this.triggerStep();
@@ -169,7 +201,7 @@ export class SimulationEngine {
     this.lastAgentVerdict = null;
 
     if (this.records.length > 0) {
-      const first = this.records[0]!;
+      const first = this.getActiveRecord()!;
       auditTelemetryStep(first, []).then((verdict) => {
         this.lastAgentVerdict = verdict;
         this.emitRow(first);
@@ -206,8 +238,57 @@ export class SimulationEngine {
     return null;
   }
 
+  public overrideSetpoint(temperature: number): TelemetryPoint | null {
+    if (!Number.isFinite(temperature) || temperature < -100 || temperature > 100) {
+      throw new Error("Setpoint must be a finite temperature between -100°C and 100°C.");
+    }
+    if (this.records.length === 0) throw new Error("No dataset loaded.");
+    this.setpointOverride = temperature;
+    const record = this.getActiveRecord();
+    if (record) this.emitRow(record);
+    this.broadcastStatus();
+    return record;
+  }
+
+  public getTelemetryStatus() {
+    const record = this.getActiveRecord();
+    return {
+      currentIndex: this.currentIndex,
+      currentStep: this.records.length ? this.currentIndex + 1 : 0,
+      totalRecords: this.records.length,
+      cargoTemperature: record?.cargo_temperature ?? null,
+      ambientTemperature: record?.ambient_temperature ?? null,
+      setpointTemperature: record?.setpoint_temperature ?? null,
+      batteryLevel: record?.battery_level ?? null,
+      doorOpen: record?.door_open ?? null,
+      shipmentId: this.activeShipmentId,
+      isPlaying: this.isPlaying,
+    };
+  }
+
+  public async queryRecentAlerts() {
+    const stored = await loadUnacknowledgedAlerts(this.activeShipmentId);
+    const combined = stored ? [...stored] : [];
+    const seen = new Set(combined.map((incident) => `${incident.shipmentId}:${incident.stepSequence}`));
+    for (const incident of this.recentIncidents) {
+      const key = `${incident.shipmentId}:${incident.stepSequence}`;
+      if (!seen.has(key)) combined.push(incident);
+    }
+    return combined
+      .sort((left, right) => (right.createdAt?.getTime() ?? 0) - (left.createdAt?.getTime() ?? 0))
+      .slice(0, 20);
+  }
+
+  private getActiveRecord(): TelemetryPoint | null {
+    const point = this.records[this.currentIndex];
+    if (!point) return null;
+    return this.setpointOverride === null
+      ? point
+      : { ...point, setpoint_temperature: this.setpointOverride };
+  }
+
   public getStatus(): SimulationStatus {
-    const activePayload = this.records[this.currentIndex] ?? null;
+    const activePayload = this.getActiveRecord();
     const alert = this.getAlert(activePayload);
     const speed = Number((1000 / this.intervalMs).toFixed(2));
     const totalRecords = this.records.length;
@@ -276,7 +357,7 @@ export class SimulationEngine {
   }
 
   private async triggerStep() {
-    const currentRecord = this.records[this.currentIndex];
+    const currentRecord = this.getActiveRecord();
     if (!currentRecord) return;
 
     this.isProcessingStep = true;
@@ -301,6 +382,7 @@ export class SimulationEngine {
   private emitRow(record: TelemetryPoint) {
     const alert = this.getAlert(record);
     const status = this.getStatus();
+    if (alert) this.recordExcursion(record, alert.message);
 
     const payload = {
       row: record,
@@ -325,6 +407,24 @@ export class SimulationEngine {
     if (alert) {
       this.broadcast("alert", alert);
     }
+  }
+
+  private recordExcursion(record: TelemetryPoint, message: string): void {
+    const stepSequence = this.currentIndex + 1;
+    const key = `${this.activeShipmentId}:${stepSequence}`;
+    if (this.incidentKeys.has(key)) return;
+    this.incidentKeys.add(key);
+    const incident: StoredAlertIncident = {
+      shipmentId: this.activeShipmentId,
+      stepSequence,
+      alertType: "EXCURSION",
+      severity: record.cargo_temperature > record.setpoint_temperature + 5 ? "CRITICAL" : "WARNING",
+      message,
+      createdAt: new Date(),
+    };
+    this.recentIncidents.unshift(incident);
+    this.recentIncidents = this.recentIncidents.slice(0, 100);
+    void persistAlertIncident(incident);
   }
 
   private broadcastStatus() {

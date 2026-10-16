@@ -25,7 +25,7 @@ const upload = multer({
 /**
  * Shared file parsing handler
  */
-function handleUploadedDataset(req: Request, res: Response) {
+async function handleUploadedDataset(req: Request, res: Response) {
   try {
     const uploadedFile =
       req.file ||
@@ -48,7 +48,17 @@ function handleUploadedDataset(req: Request, res: Response) {
       return;
     }
 
-    simulationController.loadDataset(points);
+    const requestedShipmentId = typeof req.body?.shipmentId === "string"
+      ? req.body.shipmentId.trim()
+      : simulationController.activeShipmentId;
+    if (!requestedShipmentId || requestedShipmentId.length > 64) {
+      res.status(400).json({
+        success: false,
+        error: "shipmentId must be a non-empty string of at most 64 characters.",
+      });
+      return;
+    }
+    const persisted = await simulationController.loadUploadedDataset(points, requestedShipmentId);
 
     // Return Step 2 required shape: { success: true, totalRecords: number, preview: record[0] }
     res.json({
@@ -56,6 +66,7 @@ function handleUploadedDataset(req: Request, res: Response) {
       totalRecords: points.length,
       preview: points[0],
       filename: uploadedFile.originalname,
+      storage: persisted ? "postgres" : "memory",
       status: simulationController.getStatus(),
     });
   } catch (err: any) {
@@ -72,16 +83,16 @@ function handleUploadedDataset(req: Request, res: Response) {
  * POST /api/dataset/upload
  * Primary endpoint for customer dataset uploads (Step 2)
  */
-router.post("/dataset/upload", upload.any(), (req: Request, res: Response) => {
-  handleUploadedDataset(req, res);
+router.post("/dataset/upload", upload.any(), async (req: Request, res: Response) => {
+  await handleUploadedDataset(req, res);
 });
 
 /**
  * POST /api/simulation/upload
  * Backward compatible endpoint
  */
-router.post("/simulation/upload", upload.any(), (req: Request, res: Response) => {
-  handleUploadedDataset(req, res);
+router.post("/simulation/upload", upload.any(), async (req: Request, res: Response) => {
+  await handleUploadedDataset(req, res);
 });
 
 /**

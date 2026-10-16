@@ -38,7 +38,35 @@ const chartData = [
   doors: i >= 12 && i <= 16 ? (i === 13 ? 3 : 2) : i === 8 || i === 19 ? 1 : 0,
 }));
 
-type Message = { from: 'user' | 'ai'; text: string };
+type CopilotAction = { label: string; action: string };
+type Message = { from: 'user' | 'ai'; text: string; actions?: CopilotAction[] };
+
+function MarkdownText({ text }: { text: string }) {
+  const renderInline = (line: string, lineIndex: number) => line
+    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    .map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={`${lineIndex}-${index}`}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={`${lineIndex}-${index}`}>{part.slice(1, -1)}</code>;
+      }
+      return part;
+    });
+
+  return (
+    <div>
+      {text.split('\n').map((line, index) => {
+        const heading = line.match(/^#{1,3}\s+(.+)$/);
+        if (heading) return <div key={index} style={{ fontWeight: 700 }}>{renderInline(heading[1], index)}</div>;
+        if (/^\s*[-*]\s+/.test(line)) {
+          return <div key={index}>• {renderInline(line.replace(/^\s*[-*]\s+/, ''), index)}</div>;
+        }
+        return <div key={index}>{line ? renderInline(line, index) : <>&nbsp;</>}</div>;
+      })}
+    </div>
+  );
+}
 
 function TwinMap({ zones, breach, doorOpen, onSelect }: { zones: Zone[]; breach: boolean; doorOpen: boolean; onSelect: (zone: Zone) => void }) {
   const [layers, setLayers] = useState({ Doors: true, 'IoT Sensors': true, Equipment: true, 'Airflow Pathways': true });
@@ -180,10 +208,7 @@ function App() {
   const [duration, setDuration] = useState(42);
   const [ambient, setAmbient] = useState(32);
   const [strategy, setStrategy] = useState('Off-Peak Night Shift');
-  const [messages, setMessages] = useState<Message[]>([
-    { from: 'user', text: 'Suggest ways to reduce energy waste in Bay 3 and provide a maintenance plan.' },
-    { from: 'ai', text: 'For Bay 3, prioritize these high-impact actions:\n\n• Replace degraded silicone flap seal — estimated 8% total energy-loss reduction.\n• Shift blast precooling to 02:00–05:00 AM — saves ~12% on peak kW charges.\n• Clear Aisle 2 pallet obstruction to restore 350 CFM fan circulation.\n\nMaintenance plan: inspect the seal today, verify airflow after aisle clearance, then trend compressor duty cycle for 24 hours.' },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
@@ -369,33 +394,61 @@ function App() {
 
   const notify = (text: string) => setToast(text);
 
-  const sendPrompt = (text = prompt) => {
+  const sendPrompt = async (text = prompt) => {
     if (!text.trim() || streaming) return;
     const question = text.trim();
     setMessages((all) => [...all, { from: 'user', text: question }]);
     setPrompt('');
     setStreaming(true);
-    window.setTimeout(() => {
-      const lower = question.toLowerCase();
-      const reply = lower.includes('compressor')
-        ? 'Compressor 2 is operating 18% above its thermal baseline. Check condenser airflow and suction pressure first; clear the Aisle 2 obstruction, inspect the evaporator coil for icing, then trend discharge temperature for 15 minutes. Dispatch a technician if the superheat remains outside its setpoint.'
-        : lower.includes('esg')
-        ? 'Audit snapshot: 12.4 tonnes CO2 avoided this month across 28,600 kWh saved. Export-ready measures include off-peak precooling, corrected door seals, and restored evaporator airflow. Record utility bills and maintenance evidence for the Tier 1 net-zero review.'
-        : lower.includes('door') || lower.includes('seal')
-        ? 'Failure simulation: a seal breach can add approximately 31 kW as warm, humid air enters the vault. Isolate Bay 3, fit a temporary strip curtain, keep the loading interval below 20 seconds, and replace the silicone flap seal before the next peak shift.'
-        : 'Recommended sequence: reduce door-open time below 20 seconds, clear Aisle 2 to restore 350 CFM, and move blast precooling to 02:00–05:00. Inspect the Bay 3 silicone seal and review Compressor 2 discharge temperature after the next cycle. Expected outcome: lower peak demand with no compromise to product temperature.';
-      let index = 0;
-      const timer = window.setInterval(() => {
-        index = Math.min(reply.length, index + 5);
-        setStreamingText(reply.slice(0, index));
-        if (index >= reply.length) {
-          window.clearInterval(timer);
-          setMessages((all) => [...all, { from: 'ai', text: reply }]);
-          setStreaming(false);
-          setStreamingText('');
-        }
-      }, 18);
-    }, 250);
+    setStreamingText('Querying live operations context…');
+    try {
+      const response = await fetch('/api/copilot/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: question,
+          history: messages.map((entry) => ({
+            role: entry.from === 'ai' ? 'assistant' : 'user',
+            content: entry.text,
+          })),
+          activeContext: {
+            simulation: seqSim.status,
+            telemetry: activeTelemetry,
+            facility: { zones, ambient, doorOpen, doorSeconds },
+          },
+        }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok) {
+        const error = result && typeof result === 'object' && 'error' in result && typeof result.error === 'string'
+          ? result.error
+          : `Copilot request failed (${response.status}).`;
+        throw new Error(error);
+      }
+      if (!result || typeof result !== 'object' || !('response' in result) || typeof result.response !== 'string') {
+        throw new Error('Copilot returned an invalid response.');
+      }
+      const responseText = result.response;
+      const responseActions = 'actions' in result ? result.actions : undefined;
+      const actions = Array.isArray(responseActions)
+        ? responseActions.filter((action): action is CopilotAction =>
+          Boolean(action)
+          && typeof action === 'object'
+          && 'label' in action
+          && typeof action.label === 'string'
+          && 'action' in action
+          && typeof action.action === 'string')
+        : [];
+      setMessages((all) => [...all, { from: 'ai', text: responseText, actions }]);
+    } catch (error) {
+      setMessages((all) => [
+        ...all,
+        { from: 'ai', text: error instanceof Error ? `Copilot unavailable: ${error.message}` : 'Copilot request failed.' },
+      ]);
+    } finally {
+      setStreaming(false);
+      setStreamingText('');
+    }
   };
 
   const triggerBreach = () => {
@@ -817,10 +870,10 @@ function App() {
               <section className="panel copilot nav-target" id="copilot" data-testid="module-copilot">
                 <div className="panel-head">
                   <div>
-                    <div className="panel-title"><Sparkles size={15} color="#54d1df"/> Offline Energy Co-Pilot</div>
-                    <div className="panel-sub">Warehouse operations assistant · locally simulated</div>
+                    <div className="panel-title"><Sparkles size={15} color="#54d1df"/> AI Operations Co-Pilot</div>
+                    <div className="panel-sub">LLM-powered operations assistant · live simulation tools</div>
                   </div>
-                  <span className="model-tag">Model: Llama 3 / GPT-4o RAG (Warehouse Ops Fine-Tuned)</span>
+                  <span className="model-tag">Model: API-configured provider · live telemetry</span>
                 </div>
                 {ticket && (
                   <div className="message ai" style={{ margin:'10px 13px 0',borderColor:'#834149',background:'#281b25' }} data-testid="status-urgent-ticket">
@@ -832,7 +885,16 @@ function App() {
                   {messages.map((message, i) => (
                     <div className={`message ${message.from}`} key={`${i}-${message.from}`} data-testid={`chat-message-${i}`}>
                       {message.from === 'ai' && <strong>CO-PILOT / OPS INTELLIGENCE</strong>}
-                      <div style={{ whiteSpace:'pre-wrap', marginTop:message.from === 'ai' ? 5 : 0 }}>{message.text}</div>
+                      <div style={{ whiteSpace:'pre-wrap', marginTop:message.from === 'ai' ? 5 : 0 }}>
+                        <MarkdownText text={message.text}/>
+                      </div>
+                      {message.actions && message.actions.length > 0 && (
+                        <div className="chips" aria-label="Completed Copilot actions">
+                          {message.actions.map((action, actionIndex) => (
+                            <span className="chip" key={`${action.action}-${actionIndex}`}>{action.label}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {streaming && (

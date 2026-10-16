@@ -211,7 +211,7 @@ body {
 
     <div class="chat-container">
       <div class="chat-header">
-        <span class="mono" style="font-size:12px; color:#42d4b2;">● Model: Llama 3 / Ops Intelligence Fine-Tune (Local Engine)</span>
+        <span class="mono" style="font-size:12px; color:#42d4b2;">● Model: API-configured LLM · live operations tools</span>
         <button style="background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:12px;" onclick="clearChat()">Clear History</button>
       </div>
 
@@ -239,6 +239,19 @@ body {
 <script>
 const messagesEl = document.getElementById('chatMessages');
 const inputEl = document.getElementById('userInput');
+let sending = false;
+
+function renderMarkdown(text) {
+  const escaped = String(text).replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+  return escaped
+    .replace(/^###\s+(.+)$/gm, '<strong>$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .replace(/\n/g, '<br/>');
+}
 
 function renderHistory() {
   if (!window.CC || !messagesEl) return;
@@ -256,25 +269,40 @@ function renderHistory() {
     const div = document.createElement('div');
     div.className = `msg ${msg.role}`;
     if (msg.role === 'ai') {
-      div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${msg.text}`;
+      div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${renderMarkdown(msg.text)}`;
     } else {
       div.textContent = msg.text;
     }
     messagesEl.appendChild(div);
+    if (msg.actions && Array.isArray(msg.actions)) addActionChips(msg.actions);
   });
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function addMessage(text, role) {
+function addMessage(text, role, actions = []) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   if (role === 'ai') {
-    div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${text}`;
+    div.innerHTML = `<div class="ai-badge">CO-PILOT / OPS INTELLIGENCE</div>${renderMarkdown(text)}`;
   } else {
     div.textContent = text;
   }
   messagesEl.appendChild(div);
+  if (actions.length) addActionChips(actions);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addActionChips(actions) {
+  const row = document.createElement('div');
+  row.className = 'chips-row';
+  actions.forEach(action => {
+    if (!action || typeof action.label !== 'string') return;
+    const chip = document.createElement('span');
+    chip.className = 'chip-btn';
+    chip.textContent = action.label;
+    row.appendChild(chip);
+  });
+  if (row.childElementCount) messagesEl.appendChild(row);
 }
 
 function handleSend(e) {
@@ -285,43 +313,54 @@ function handleSend(e) {
   sendQuery(q);
 }
 
-function sendQuery(text) {
+async function sendQuery(text) {
+  if (sending) return;
   addMessage(text, 'user');
+  sending = true;
 
+  const previousHistory = window.CC ? (CC.get('copilot.conversationHistory') || []) : [];
   if (window.CC) {
-    const history = CC.get('copilot.conversationHistory') || [];
-    history.push({ role: 'user', text, timestamp: Date.now() });
+    const history = [...previousHistory, { role: 'user', text, timestamp: Date.now() }];
     CC.set('copilot.conversationHistory', history, { silent: true });
   }
 
-  setTimeout(() => {
-    let reply = '';
-    const l = text.toLowerCase();
-    const CC = window.CC;
-    const power = (CC && Math.round(CC.get('facility.totalLoad'))) || 251;
-    const doorSec = (CC && CC.get('simulation.doorOpenSeconds')) || 42;
-    const co2Tonnes = (CC && CC.get('esg.co2AvoidedTonnes')) || 12.4;
-    const kwh = (CC && CC.get('esg.energySavedKwh')) || 28600;
-
-    if (l.includes('esg') || l.includes('audit')) {
-      reply = `<b>Audit Snapshot Generated:</b><br/>• <b>${co2Tonnes} tonnes CO₂</b> avoided this month.<br/>• <b>${kwh.toLocaleString()} kWh</b> saved across Zones A & B through off-peak night precooling.<br/>• Direct energy bill savings: <b>₹2.1 Lakhs ($2,600 USD)</b>.<br/>You can export the full verified report in the <a href="audit_and_esg_report.html" onclick="CC.go('audit')" style="color:#00D8FF">Audit & ESG Suite</a>.`;
-    } else if (l.includes('compressor')) {
-      reply = '<b>Compressor 2 Diagnostic:</b><br/>Operating suction pressure is 2.1 bar, superheat has dropped to 3.2K. The Aisle 2 pallet obstruction is restricting evaporator return airflow by 15%.<br/><b>Recommendation:</b> Clear Aisle 2 immediately to restore 350 CFM circulation before initiating defrost.';
-    } else if (l.includes('door') || l.includes('bay') || l.includes('seal')) {
-      reply = `<b>Mitigation Plan for Bay 3:</b><br/>• Door open duration: <b>${doorSec}s</b> (Limit 20s).<br/>• Replacing degraded silicone flap seal saves ~8% load.<br/>• Shift blast cooling to 02:00–05:00 window to lower peak kW penalty by 12%.`;
-    } else {
-      reply = `<b>Facility ND-04 Operations Review:</b><br/>Current facility power draw is <b>${power} kW</b>. Thermal monitoring is active across Zones A, B, and C. Let me know if you would like me to compile an audit report or simulate an off-peak shift schedule.`;
-    }
-
-    addMessage(reply, 'ai');
-
+  inputEl.disabled = true;
+  try {
+    const history = previousHistory
+      .filter(msg => msg && typeof msg.text === 'string' && (msg.role === 'user' || msg.role === 'ai' || msg.role === 'assistant'))
+      .map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text }));
+    const response = await fetch('/api/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history,
+        activeContext: window.CC ? {
+          facility: CC.get('facility'),
+          simulation: CC.get('simulation'),
+          esg: CC.get('esg')
+        } : {}
+      })
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || `Copilot request failed (${response.status}).`);
+    if (typeof payload.response !== 'string') throw new Error('Copilot returned an invalid response.');
+    const actions = Array.isArray(payload.actions) ? payload.actions : [];
+    addMessage(payload.response, 'ai', actions);
     if (window.CC) {
-      const history = CC.get('copilot.conversationHistory') || [];
-      history.push({ role: 'ai', text: reply, timestamp: Date.now() });
-      CC.set('copilot.conversationHistory', history);
-      CC.emit('copilot:message', { text, reply });
+      const historyNow = CC.get('copilot.conversationHistory') || [];
+      historyNow.push({ role: 'ai', text: payload.response, actions, timestamp: Date.now() });
+      CC.set('copilot.conversationHistory', historyNow);
+      CC.emit('copilot:message', { text, reply: payload.response });
     }
-  }, 400);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Copilot request failed.';
+    addMessage(`Copilot unavailable: ${message}`, 'ai');
+  } finally {
+    sending = false;
+    inputEl.disabled = false;
+    inputEl.focus();
+  }
 }
 
 function clearChat() {

@@ -876,35 +876,35 @@ body {
       <div class="card-head">
         <div>
           <div class="card-title"><span class="ico">⚡</span> Equipment Control</div>
-          <div class="card-sub">Compressor rack · toggles persist in browser session only</div>
+          <div class="card-sub">Compressor rack · switch state syncs when the API is available</div>
         </div>
       </div>
 
       <div class="sub-panel">
         <div class="sub-panel-title">Compressors <span class="badge">4 UNITS</span></div>
 
-        <div class="equip-row">
+        <div class="equip-row" data-compressor="CMP-01">
           <div style="flex:1"><div class="equip-name">CMP-01 · Carrier Vilter 450</div><div class="equip-meta">R-744 · 120 kW rated</div></div>
           <select class="equip-zone" data-track><option>Zone A</option><option>Zone B</option><option>Zone C</option><option>Zone D</option></select>
           <span class="duty-pill" id="duty1">68%</span>
           <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
         </div>
 
-        <div class="equip-row">
+        <div class="equip-row" data-compressor="CMP-02">
           <div style="flex:1"><div class="equip-name">CMP-02 · Bitzer 4FE-25</div><div class="equip-meta">R-744 · 90 kW rated</div></div>
           <select class="equip-zone" data-track><option>Zone B</option><option>Zone A</option><option>Zone C</option><option>Zone D</option></select>
           <span class="duty-pill" id="duty2">82%</span>
           <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
         </div>
 
-        <div class="equip-row">
+        <div class="equip-row" data-compressor="CMP-03">
           <div style="flex:1"><div class="equip-name">CMP-03 · GEA Grasso V</div><div class="equip-meta">R-717 · 140 kW rated</div></div>
           <select class="equip-zone" data-track><option>Zone C</option><option>Zone A</option><option>Zone B</option><option>Zone D</option></select>
           <span class="duty-pill" id="duty3">74%</span>
           <label class="switch"><input type="checkbox" checked data-track><span class="track"></span><span class="thumb"></span></label>
         </div>
 
-        <div class="equip-row">
+        <div class="equip-row" data-compressor="CMP-04">
           <div style="flex:1"><div class="equip-name">CMP-04 · Bitzer 2CES-3</div><div class="equip-meta">R-744 · 45 kW rated</div></div>
           <select class="equip-zone" data-track><option>Zone D</option><option>Zone A</option><option>Zone B</option><option>Zone C</option></select>
           <span class="duty-pill" id="duty4">32%</span>
@@ -1359,6 +1359,21 @@ function saveConfig() {
     });
     CC.set("facility.zones", zones);
 
+    const compressors = CC.get("facility.compressors") || [];
+    $$("#section-equipment .equip-row").forEach(row => {
+      const id = row.dataset.compressor;
+      const zoneSelect = row.querySelector(".equip-zone");
+      const enabled = row.querySelector('input[type="checkbox"]');
+      if (!id || !zoneSelect || !enabled) return;
+      const compressor = compressors.find(unit => unit.id === id) || { id };
+      compressor.zone = String(zoneSelect.value).replace(/^Zone\s+/, "");
+      compressor.enabled = enabled.checked;
+      const index = compressors.findIndex(unit => unit.id === id);
+      if (index >= 0) compressors[index] = compressor;
+      else compressors.push(compressor);
+    });
+    CC.set("facility.compressors", compressors);
+
     CC.emit("config:saved", CC.state.facility);
   }
   initialSnapshot = snapshot();
@@ -1469,6 +1484,16 @@ function loadFromCC() {
       }
     }
   });
+
+  (f.compressors || []).forEach(compressor => {
+    if (compressor.enabled === undefined) return;
+    const row = $(`#section-equipment .equip-row[data-compressor="${compressor.id}"]`);
+    if (!row) return;
+    const enabled = row.querySelector('input[type="checkbox"]');
+    const zone = row.querySelector(".equip-zone");
+    if (enabled) enabled.checked = Boolean(compressor.enabled);
+    if (zone && compressor.zone) zone.value = `Zone ${compressor.zone}`;
+  });
 }
 
 window.addEventListener("load", () => {
@@ -1481,6 +1506,7 @@ window.addEventListener("load", () => {
 });
 if (window.CC) {
   CC.on("state:ready", loadFromCC);
+  CC.on("facility:config:loaded", loadFromCC);
 }
 </script>
 </body>
